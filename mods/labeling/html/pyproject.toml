@@ -1,0 +1,15 @@
+[project]
+name = "labeling-html"
+version = "0.1.0"
+description = "A sick HTML labeling tool"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "openai>=1.52.0",
+    "streamlit>=1.39.0",
+    "weave>=0.51.17",
+]
+
+[tool.weave.mod]
+flavor = "streamlit"
+secrets = ["WANDB_API_KEY", "OPENAI_API_KEY"]

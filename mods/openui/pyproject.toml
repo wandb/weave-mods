@@ -1,0 +1,13 @@
+[project]
+name = "openui"
+version = "0.1.0"
+description = "OpenUI builds tailwindcss UI's for you"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [ "openui[litellm] @ git+https://github.com/wandb/openui.git" ]
+
+[tool.weave.mod]
+flavor = "custom"
+secrets = ["OPENAI_API_KEY", "ANTHROPIC_API_KEY", "WANDB_API_KEY"]
+entrypoint = ["python", "-m", "openui", "--litellm"]
+port = 7878
