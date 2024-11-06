@@ -1,0 +1,18 @@
+[project]
+name = "embedding-classifier"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "altair>=5.4.1",
+    "faiss-cpu>=1.9.0",
+    "openai>=1.52.2",
+    "scikit-learn>=1.5.2",
+    "streamlit>=1.39.0",
+    "weave>=0.51.17",
+]
+
+[tool.weave.mod]
+flavor = "streamlit"
+secrets = ["OPENAI_API_KEY", "WANDB_API_KEY"]

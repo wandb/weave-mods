@@ -1,0 +1,20 @@
+[project]
+name = "playground"
+version = "0.1.0"
+description = "A chat playground"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+ "open-webui>=0.3.32",
+ "streamlit>=1.39.0",
+]
+
+[tool.weave.mod]
+flavor = "custom"
+entrypoint = ["open-webui", "serve", "--port", "6637"]
+secrets = ["OPENAI_API_KEY"]
+
+[tool.weave.mod.env]
+WEBUI_AUTH="False"
+ENABLE_SIGNUP="False"
+DEFAULT_USER_ROLE="admin"

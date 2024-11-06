@@ -12,7 +12,7 @@ A way to customize and enhance your GenAI dashboards.
 ### Run a mod locally in dev mode
 
 ```bash
-./mod.py dev modules/welcome
+./mod.py dev mods/welcome
 ```
 
 ## Create your own mod!
@@ -32,7 +32,7 @@ A mod is a Python package that can be used to customize and enhance your GenAI d
 flavor = "streamlit"
 secrets = ["OPENAI_API_KEY", "WANDB_API_KEY"]
 # Optional, inferred from flavor
-port = 8501
+port = 6637
 entrypoint = "app.py"
 
 [tool.weave.mod.secrets.OPENAI_API_KEY]
@@ -46,7 +46,7 @@ DEFAULT_OPENAI_MODEL = "gpt-4o-mini"
 
 - `streamlit`: A Streamlit app.
 - `fasthtml`: A FastHTML app.
-- `uvicorn`: A Uvicorn app.
+- `marimo`: A Marimo app.
 - `custom`: A custom entrypoint.
 
 ### Secrets
@@ -59,4 +59,4 @@ You can take existing repositories and turn them into a mod!  See `mods/openui` 
 
 ## What about arbitrary Docker images?
 
-We may support this in the future, but we're focusing on Python for now.  By offloading the packaging and runtime concerns to weave, we're able to ensure the actual containers we run are secure and performant.
+We may support this in the future, but we're focusing on Python for now.  By offloading the packaging and runtime concerns to us, we're able to ensure the actual containers we run are secure and performant.

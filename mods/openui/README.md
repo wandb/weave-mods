@@ -1,3 +1,3 @@
-# OPENUI mod
+# OpenUI Mod
 
-Add more description here...
+OpenUI is a library for building UI's with TailwindCSS.  Find out more at https://github.com/wandb/openui

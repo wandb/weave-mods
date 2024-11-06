@@ -1,0 +1,31 @@
+FROM ghcr.io/astral-sh/uv:python3.12-bookworm
+
+WORKDIR /app
+
+RUN groupadd -r app && \
+    useradd -l -r -g app -d /app -c "Docker image user" app && \
+    mkdir -p /app && \
+    chown -R app:app /app
+
+USER 999
+
+ENV PYTHONUNBUFFERED=1 UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy MARIMO_MANAGE_SCRIPT_METADATA=true
+
+# System deps
+RUN --mount=type=cache,uid=999,gid=999,target=/app/.cache/uv \
+    uv tool install dumb-init
+
+# Mod deps
+COPY --chown=999:999 . /app/src
+
+RUN --mount=type=cache,uid=999,gid=999,target=/app/.cache/uv \
+    cd /app/src && uv venv && uv sync --frozen --no-dev
+
+ENV PATH=/app/src/.venv/bin:${PATH}
+
+EXPOSE 6637
+
+ENTRYPOINT ["/app/.local/bin/dumb-init", "--"]
+
+# This get's populated by our build script
+CMD $$MOD_ENTRYPOINT

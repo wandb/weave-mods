@@ -248,23 +248,6 @@ wheels = [
 ]
 
 [[package]]
-name = "eval-html"
-version = "0.1.0"
-source = { virtual = "." }
-dependencies = [
-    { name = "openai" },
-    { name = "streamlit" },
-    { name = "weave" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "openai", specifier = ">=1.52.0" },
-    { name = "streamlit", specifier = ">=1.39.0" },
-    { name = "weave", specifier = ">=0.51.17" },
-]
-
-[[package]]
 name = "frozenlist"
 version = "1.4.1"
 source = { registry = "https://pypi.org/simple" }
@@ -464,6 +447,23 @@ wheels = [
 ]
 
 [[package]]
+name = "labeling-html"
+version = "0.1.0"
+source = { virtual = "." }
+dependencies = [
+    { name = "openai" },
+    { name = "streamlit" },
+    { name = "weave" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "openai", specifier = ">=1.52.0" },
+    { name = "streamlit", specifier = ">=1.39.0" },
+    { name = "weave", specifier = ">=0.51.17" },
+]
+
+[[package]]
 name = "markdown-it-py"
 version = "3.0.0"
 source = { registry = "https://pypi.org/simple" }
@@ -563,11 +563,11 @@ wheels = [
 
 [[package]]
 name = "narwhals"
-version = "1.9.4"
+version = "1.10.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/86/9d/58e978bc1a4fda8333d94c3f3071c620109eb225b6665aba9c25997062ef/narwhals-1.9.4.tar.gz", hash = "sha256:5de1f2d7bfbe555573d945fe1d760469a05784f3e69b7bc1b5b1303aae7946a1", size = 157117 }
+sdist = { url = "https://files.pythonhosted.org/packages/a6/43/5f03a6c1976f8f8053f98d33892be6534fcde908dd1827fe69eb3b9ad90f/narwhals-1.10.0.tar.gz", hash = "sha256:a380e64110c3169c4b0b592c5b64ae6dc4cce76e9d3c56edc608a8ae5994cfc1", size = 161509 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/c4/61/2440cb9ac78164c10d1c1b17a4bbc2ff44e77e42266a3d6876ad2676b807/narwhals-1.9.4-py3-none-any.whl", hash = "sha256:cdd16f73268a3f0d3327aa9e4c6ab25a0b277629d6710bef58e86f40e57e5cc9", size = 188947 },
+    { url = "https://files.pythonhosted.org/packages/82/45/6bb08a5e5ac2d9a95f4116567d0aafb1e5f86c4bbcf982e209e5ae872b3d/narwhals-1.10.0-py3-none-any.whl", hash = "sha256:c83a378960651c391e5f3d68af3a821eda74c9713073518fe0c39aefc5ad8f8e", size = 193600 },
 ]
 
 [[package]]

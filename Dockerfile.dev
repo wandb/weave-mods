@@ -1,0 +1,28 @@
+# Might want to use buildback-deps:bookworm for extra build tools
+FROM ghcr.io/astral-sh/uv:python3.12-bookworm
+
+WORKDIR /app
+
+RUN groupadd -r app && \
+    useradd -l -r -g app -d /app -c "Docker image user" app && \
+    mkdir -p /app && \
+    chown -R app:app /app
+
+USER 999
+
+ENV PATH=/app/.local/bin:/app/.venv/bin:${PATH} PYTHONUNBUFFERED=1 UV_LINK_MODE=copy MARIMO_MANAGE_SCRIPT_METADATA=true
+
+RUN uv venv && \
+    uv init && \
+    uv add streamlit toml weave packageurl-python && \
+    uv tool install dumb-init
+
+COPY mods /mods
+
+EXPOSE 8501
+
+HEALTHCHECK CMD test -f /tmp/mod-ready
+
+ENTRYPOINT [ "/app/.local/bin/dumb-init", "--"]
+
+CMD ["python", "/mods/dev-entrypoint.py"]
