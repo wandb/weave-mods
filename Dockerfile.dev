@@ -18,6 +18,7 @@ RUN uv venv && \
     uv tool install dumb-init
 
 COPY mods /mods
+COPY sdk /sdk
 
 EXPOSE 8501
 

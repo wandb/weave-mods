@@ -1,0 +1,11 @@
+[project]
+name = "mods"
+version = "0.1.0"
+description = "Helpers for building Weave Mods"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = ["streamlit>=1.40.0", "weave>=0.51.19"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

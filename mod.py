@@ -62,8 +62,9 @@ def dev(directory: Annotated[str, typer.Argument()] = "."):
     port = weave_config.get("port", 6637)
     # Get secrets
     secrets = weave_config.get("secrets", ["OPENAI_API_KEY"])
-    if os.getenv("WANDB_BASE_URL") is None:
-        os.environ["WANDB_BASE_URL"] = "http://app.k8s.wandb.dev"
+    # TODO: likely just read from ~/.config/wandb/settings
+    # if os.getenv("WANDB_BASE_URL") is None:
+    #    os.environ["WANDB_BASE_URL"] = "http://app.k8s.wandb.dev"
     if os.getenv("WANDB_API_KEY") is None:
         if os.path.exists(os.path.expanduser("~/.netrc")):
             found_machine = False
@@ -103,6 +104,8 @@ def dev(directory: Annotated[str, typer.Argument()] = "."):
         "-v",
         f"{os.path.abspath(os.path.dirname(__file__))}/mods:/mods",
         "-v",
+        f"{os.path.abspath(os.path.dirname(__file__))}/sdk:/sdk",
+        "-v",
         "weave-mods-cache:/app/.cache",
     ]
     # "--tmpfs", "/app/src/.venv:mode=0777",
@@ -111,7 +114,7 @@ def dev(directory: Annotated[str, typer.Argument()] = "."):
         docker_command.extend(["-e", secret])
     for env in weave_config.get("env", {}).items():
         docker_command.extend(["-e", f"{env[0]}={env[1]}"])
-    docker_command.append("localhost:5001/spiderweb-mods")
+    docker_command.append("localhost:5001/mods")
     # Display command
     typer.secho("Running docker command:", fg=typer.colors.GREEN)
     typer.secho(" ".join(docker_command), fg=typer.colors.BLUE)

@@ -74,6 +74,7 @@ async def download_purl(url: str):
         if not (Path("/mods") / purl.name).exists():
             raise ValueError(f"Mod {purl.name} not found")
         symlink_tree(f"/mods/{purl.name}", "/app/src", ignore=ignore_venv)
+        symlink_tree("/sdk", "/app/src/sdk", ignore=ignore_venv)
         return purl
     elif purl.type in ("github", "gitlab"):
         repo_url = f"https://{purl.type}.com/{purl.namespace}/{purl.name}.git"
@@ -167,7 +168,14 @@ async def install_deps(deps_file: Path):
         process = await asyncio.create_subprocess_exec(
             "uv",
             "sync",
-            "--frozen",
+        )
+        # Install our SDK / mod helpers
+        process = await asyncio.create_subprocess_exec(
+            "uv",
+            "pip",
+            "install",
+            "--editable",
+            "/app/src/sdk",
         )
     else:
         process = await asyncio.create_subprocess_exec(
