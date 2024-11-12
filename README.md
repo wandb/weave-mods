@@ -9,11 +9,17 @@ A way to customize and enhance your GenAI dashboards.
 - [uv](https://docs.astral.sh/uv)
 - [docker](https://docker.com/products/docker-desktop)
 
+```bash
+make build-dev
+```
+
 ### Run a mod locally in dev mode
 
 ```bash
 ./mod.py dev mods/welcome
 ```
+
+> NOTE: ensure you're logged into wandb and you'll likely want to set the WANDB_PROJECT env var to a project with existing weave trace data.
 
 ## Create your own mod!
 
@@ -34,9 +40,6 @@ secrets = ["OPENAI_API_KEY", "WANDB_API_KEY"]
 # Optional, inferred from flavor
 port = 6637
 entrypoint = "app.py"
-
-[tool.weave.mod.secrets.OPENAI_API_KEY]
-description = "Your OpenAI API key"
 
 [tool.weave.mod.env]
 DEFAULT_OPENAI_MODEL = "gpt-4o-mini"
