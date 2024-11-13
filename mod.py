@@ -81,7 +81,7 @@ def dev(directory: Annotated[str, typer.Argument()] = "."):
             fg=typer.colors.RED,
         )
     typer.secho(
-        f"Setting WANDB_BASE_URL={os.getenv('WANDB_BASE_URL', "https://api.wandb.ai")}",
+        f"Setting WANDB_BASE_URL={os.getenv('WANDB_BASE_URL', 'https://api.wandb.ai')}",
         fg=typer.colors.BLUE,
     )
     # Build docker command
@@ -98,6 +98,8 @@ def dev(directory: Annotated[str, typer.Argument()] = "."):
         "WANDB_BASE_URL",
         "-e",
         "WANDB_API_KEY",
+        "-e",
+        f"WANDB_ENTITY={os.getenv('WANDB_ENTITY', '')}",
         "-e",
         f"WANDB_PROJECT={os.getenv('WANDB_PROJECT', 'mods')}",
         "-p",
