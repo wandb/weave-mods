@@ -1,0 +1,26 @@
+[project]
+name = "eval_dataset_gen"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "streamlit>=1.40.1",
+    "numpy",
+    "pandas",
+    "langchain",
+    "langchain_core",
+    "langchain-community",
+    "pydantic",
+    "tqdm",
+    "weave",
+    "pdfminer.six",
+    "PyPDF2",
+    "openai",
+]
+
+[tool.uv]
+
+[tool.weave.mod]
+flavor = "streamlit"
+secrets = ["WANDB_API_KEY", "OPENAI_API_KEY"]
