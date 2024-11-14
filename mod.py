@@ -60,6 +60,7 @@ def dev(directory: Annotated[str, typer.Argument()] = "."):
             sys.exit(1)
         purl = "pkg:mod/" + directory.replace("mods/", "").replace("/", "%2F")
     port = weave_config.get("port", 6637)
+    os.environ["PORT"] = str(port)
     # Get secrets
     secrets = weave_config.get("secrets", ["OPENAI_API_KEY"])
     # TODO: likely just read from ~/.config/wandb/settings
@@ -102,6 +103,8 @@ def dev(directory: Annotated[str, typer.Argument()] = "."):
         f"WANDB_ENTITY={os.getenv('WANDB_ENTITY', '')}",
         "-e",
         f"WANDB_PROJECT={os.getenv('WANDB_PROJECT', 'mods')}",
+        "-e",
+        f"PORT={os.getenv('PORT', '6637')}",
         "-p",
         f"{port}:{port}",
         "-v",
