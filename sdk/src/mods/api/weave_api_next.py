@@ -3,7 +3,7 @@
 
 import dataclasses
 import datetime
-from typing import Any, Iterator, Optional, Sequence, Union, cast
+from typing import Any, Iterator, List, Optional, Sequence, Union, cast
 
 from weave.trace import urls, weave_client
 from weave.trace.weave_client import WeaveClient, from_json
@@ -35,6 +35,7 @@ class Call:
     output: Any = None
     exception: Optional[str] = None
     summary: Optional[dict] = None
+    attributes: Optional[dict] = None
     # These are the live children during logging
     _children: list["Call"] = dataclasses.field(default_factory=list)
 
@@ -84,6 +85,7 @@ def make_client_call(
         input_refs=input_refs,
         output=output,
         summary=server_call.summary,
+        attributes=server_call.attributes,
     )
     if call.id is None:
         raise ValueError("Call ID is None")
@@ -101,13 +103,13 @@ class CallsIter:
         server: TraceServerInterface,
         project_id: str,
         filter: CallsFilter,
-        column: str = "",
+        columns: List[str] | None = None,
         limit: int | None = None,
     ) -> None:
         self.server = server
         self.project_id = project_id
         self.filter = filter
-        self._column = column
+        self._columns = columns
         # TODO: Probably make this bigger
         self._limit = limit or 10_000
 
@@ -121,7 +123,7 @@ class CallsIter:
 
     def __iter__(self) -> Iterator[Call]:
         page_index = 0
-        page_size = 1000
+        page_size = 500
         entity, project = self.project_id.split("/")
         while True:
             response = self.server.calls_query(
@@ -129,6 +131,7 @@ class CallsIter:
                     project_id=self.project_id,
                     filter=self.filter,
                     offset=page_index * page_size,
+                    columns=self._columns,
                     limit=page_size,
                 )
             )
@@ -145,7 +148,7 @@ class CallsIter:
                 break
 
     def column(self, col_name: str) -> "CallsIter":
-        return CallsIter(self.server, self.project_id, CallsFilter(), col_name)
+        return CallsIter(self.server, self.project_id, CallsFilter(), [col_name])
 
 
 def weave_client_calls(

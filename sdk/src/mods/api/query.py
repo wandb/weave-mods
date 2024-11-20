@@ -1,11 +1,11 @@
 import datetime
 import math
 from dataclasses import dataclass
-from typing import Any, Callable, Optional
+from typing import Any, Callable, List, Optional
 
 import pandas as pd
 import streamlit as st
-from weave.trace.refs import ObjectRef, OpRef
+from weave.trace.refs import ObjectRef, OpRef, parse_uri
 from weave.trace.weave_client import WeaveClient
 
 from mods.api.pandas_util import pd_apply_and_insert
@@ -30,6 +30,21 @@ def simple_val(v):
     #     return {k: simple_val(v) for k, v in v.__dict__.items()}
     else:
         return v
+
+
+def nice_ref(x):
+    try:
+        parsed = parse_uri(x)
+        nice_name = f"{parsed.name}:{parsed.digest[:3]}"
+        if parsed.extra:
+            for i in range(0, len(parsed.extra), 2):
+                k = parsed.extra[i]
+                v = parsed.extra[i + 1]
+                if k == "id":
+                    nice_name += f"/{v[:4]}"
+        return nice_name
+    except ValueError:
+        return x
 
 
 def pd_col_join(df, sep):
@@ -87,8 +102,13 @@ class Op:
     def __str__(self):
         return self.ref().uri()
 
+    def __repr__(self):
+        name = self.name
+        name = name.split(".")[-1][-10:]
+        return f"{name}:v{self.version_index}"
 
-def get_ops(_client):
+
+def get_ops(_client: WeaveClient):
     # client = weave.init(project_name)
     client_ops = weave_client_ops(_client, latest_only=True)
     return [
@@ -97,8 +117,8 @@ def get_ops(_client):
     ]
 
 
-def get_op_versions(_client, id, include_call_counts=False):
-    client_ops = weave_client_ops(_client, id=id)
+def get_op_versions(_client: WeaveClient, op: Op, include_call_counts=False):
+    client_ops = weave_client_ops(_client, id=op.name)
     ops = [
         Op(op.project_id, op.object_id, op.digest, op.version_index)
         for op in client_ops
@@ -227,8 +247,22 @@ class Calls:
 
 
 def get_calls(
-    _client, op_name, input_refs=None, limit: int | None = None, cache_key=None
+    _client: WeaveClient,
+    op_name: str | List[str] | List[Op] | None,
+    input_refs=None,
+    limit: int | None = None,
+    cache_key=None,
 ):
+    if isinstance(op_name, list):
+        if all(type(op_name).__name__ == "Op" for o in op_name):
+            op_names = [o.ref().uri() for o in op_name]
+        else:
+            op_names = op_name
+    else:
+        if type(op_name).__name__ == "Op":
+            op_names = [op_name.ref().uri()]
+        else:
+            op_names = [op_name] if op_name else None
     call_list = [
         {
             "id": c.id,
@@ -242,12 +276,11 @@ def get_calls(
             "input_refs": c.input_refs,
             "output": c.output,
             "exception": c.exception,
-            # "attributes": c.attributes,
+            "attributes": c.attributes,
             "summary": c.summary,
-            # "started_at": c.started_at,
-            # "ended_at": c.ended_at,
+            "ended_at": c.ended_at,
         }
-        for c in weave_client_calls(_client, op_name, input_refs, limit)
+        for c in weave_client_calls(_client, op_names, input_refs, limit)
     ]
     df = pd.json_normalize(call_list)
 
@@ -256,26 +289,34 @@ def get_calls(
     df = pd_apply_and_insert(df, "op_name", split_obj_ref)
 
     # Merge the usage columns, removing the model component
-    usage_columns = [
-        col.replace("3.5-turbo", "3-5-turbo")
-        for col in df.columns
-        if col.startswith("summary.usage")
-    ]
+    usage_columns = [col for col in df.columns if col.startswith("summary.usage")]
     renamed_columns = [
-        ".".join(col.split(".")[:2] + col.split(".")[3:]).replace(
-            "3-5-turbo", "3.5-turbo"
-        )
+        f"summary.usage.{col.split('.')[-1]}"  # Keep only the metric name (last component)
         for col in usage_columns
     ]
-    usage_columns = [c.replace("3-5-turbo", "3.5-turbo") for c in usage_columns]
     df_renamed = df[usage_columns].copy()
     df_renamed.columns = renamed_columns
-    df_summed = df_renamed.groupby(level=0).sum()
+    df_summed = df_renamed.T.groupby(level=0).sum().T
     df_final = df.drop(columns=usage_columns).join(df_summed)
+    # Sum up duplicate columns
+    """
+    duplicate_cols = df_final.columns[df_final.columns.duplicated(keep=False)]
+    for col_name in duplicate_cols.unique():
+        # Sum all columns with this name and assign back to first occurrence
+        df_final[col_name] = df_final.filter(like=col_name).sum(axis=1)
+        # Drop all but the first occurrence
+        dup_indices = df_final.columns.get_indexer_for([col_name])[1:]
+        df_final = df_final.drop(columns=df_final.columns[dup_indices])
+    """
 
     return Calls(df_final)
 
 
 @st.cache_data(hash_funcs=ST_HASH_FUNCS)
-def cached_get_calls(client, op_name, input_refs=None, cache_key=None):
+def cached_get_calls(
+    client: WeaveClient,
+    op_name: str | List[str] | List[Op] | None,
+    input_refs=None,
+    cache_key=None,
+):
     return get_calls(client, op_name, input_refs, cache_key)
