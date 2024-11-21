@@ -6,35 +6,35 @@ from typing import Any, DefaultDict, Dict, Generator, List, Tuple
 
 import altair as alt
 import faiss
-import httpx
 import numpy as np
 import pandas as pd
 import streamlit as st
-import weave
 from openai import AsyncOpenAI
+from openai.types.embedding import Embedding
 from sklearn.decomposition import PCA
-
-weave.init("embedding-classifier")
 
 # Initialize the AsyncOpenAI client
 openai = AsyncOpenAI()
 
 MODEL = "gpt-4o-mini"
 MAX_PARALLEL_TASKS = 10  # Default value, can be adjusted
+EMBEDDING_MODEL = "text-embedding-3-small"
+
+
+async def fetch_openai_embedding(
+    tokenized_content: str, semaphore: asyncio.Semaphore
+) -> List[Embedding]:
+    async with semaphore:
+        response = await openai.embeddings.create(
+            model=EMBEDDING_MODEL,
+            input=tokenized_content,
+        )
+        return response.data
 
 
 def read_jsonl(file: Any) -> Generator[Dict[str, Any], None, None]:
     for line in file:
         yield json.loads(line)
-
-
-async def fetch_embedding(content: str, semaphore: asyncio.Semaphore) -> Dict[str, Any]:
-    async with semaphore:
-        async with httpx.AsyncClient() as client:
-            url = "http://host.docker.internal:11434/api/embeddings"
-            payload = {"model": "nomic-embed-text", "prompt": content}
-            response = await client.post(url, json=payload, timeout=20.0)
-            return response.json()
 
 
 @st.cache_data
@@ -56,9 +56,9 @@ async def process_jsonl(
     async def process_record(record, idx):
         if record.get("output"):
             content = record["output"]["choices"][0]["message"]["content"]
-            embedding = await fetch_embedding(content, semaphore)
+            embedding = await fetch_openai_embedding(content, semaphore)
             progress_bar.progress((idx + 1) / total_records)
-            return embedding["embedding"], idx
+            return embedding[0].embedding, idx
         return None, None
 
     progress_bar.progress(0)
