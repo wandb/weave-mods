@@ -1,0 +1,16 @@
+[project]
+name = "anamolyzer"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "streamlit>=1.40.1",
+    "openai>=1.52.2",
+    "scikit-learn>=1.5.2",
+    "weave>=0.51.17",
+    "tiktoken>=0.8.0",
+]
+
+[tool.weave.mod]
+flavor = "streamlit"
