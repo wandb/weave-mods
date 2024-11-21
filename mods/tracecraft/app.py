@@ -54,7 +54,7 @@ wandb_entity = st.sidebar.text_input("Entity", value=api.default_entity_name(), 
 wandb_project = st.sidebar.text_input("Project", value=selected_project, disabled=True)
 
 # st.title("TraceCraft")
-st.header("Build a custom trace dataset")
+st.header("Turn your traces into custom datasets")
 st.markdown("""
     This mod helps you build a dataset from your weave traces. To get started,
     select a trace to show its fields, and type in a name for each field that
@@ -132,7 +132,7 @@ for item in input_selected:
 
 with st.form("dataset_form"):
     weave_dataset = None
-    st.subheader("Step 3: Save dataset to Weave")
+    st.subheader("Step 3: Review & Publish")
     st.dataframe(df)
     save_as = st.text_input("Save As:", key=f"save_as")
     if st.form_submit_button("Save Dataset"):

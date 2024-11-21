@@ -1,7 +1,7 @@
 [project]
 name = "tracecraft"
 version = "0.1.0"
-description = "Add your description here"
+description = "Build a custom trace dataset"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
