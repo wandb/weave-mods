@@ -1,0 +1,13 @@
+[project]
+name = "annotator"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "streamlit>=1.40.1",
+    "weave"
+]
+
+[tool.weave.mod]
+flavor = "streamlit"
