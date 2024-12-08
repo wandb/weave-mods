@@ -20,6 +20,9 @@ from typing import Annotated, Dict, List, Optional
 import toml
 import typer
 from pydantic import BaseModel
+from rich.console import Console
+
+log = Console(stderr=True)
 
 env = os.getenv("ENVIRONMENT")
 if env == "production" or env == "prod":
@@ -143,19 +146,19 @@ def build(
         dir_path = Path(dir_str)
         pyproject = dir_path / "pyproject.toml"
         if not pyproject.exists():
-            typer.secho(
+            log.print(
                 f"Skipping directory: {dir_path} (no pyproject.toml)",
-                fg=typer.colors.YELLOW,
+                style="yellow",
             )
             continue
 
-        typer.secho(f"Processing directory: {dir_path}", fg=typer.colors.GREEN)
+        log.print(f"Processing directory: {dir_path}", style="green")
         dockerfile_path = dir_path / "Dockerfile"
         dockerignore_path = dir_path / ".dockerignore"
         healthcheck_path = dir_path / "healthcheck.py"
         try:
             if upgrade:
-                typer.secho("Upgrading dependencies...", fg=typer.colors.YELLOW)
+                log.print("Upgrading dependencies...", style="yellow")
                 subprocess.run(["uv", "lock", "--upgrade"], cwd=dir_path, check=True)
 
             # Create '.dockerignore' with '.venv' content
@@ -221,11 +224,9 @@ def build(
                     cwd=dir_path,
                     check=True,
                 )
-                typer.secho(f"Built image: {docker_tags[1]}", fg=typer.colors.GREEN)
+                log.print(f"Built image: {docker_tags[1]}", style="green")
             else:
-                typer.secho(
-                    f"Discovered image: {docker_tags[1]}", fg=typer.colors.GREEN
-                )
+                log.print(f"Discovered image: {docker_tags[1]}", style="green")
                 build_configs.append(
                     DockerConfig(
                         directory=str(dir_path),
@@ -241,14 +242,14 @@ def build(
                 healthcheck_path.unlink(missing_ok=True)
                 dockerignore_path.unlink(missing_ok=True)
                 dockerfile_path.unlink(missing_ok=True)
-    typer.secho(
+    log.print(
         f"{'Built' if build else 'Discovered'} {len(mod_configs)} mods",
-        fg=typer.colors.GREEN,
+        style="green",
     )
     if build:
         json.dump([item.model_dump() for item in mod_configs], sys.stdout, indent=4)
     else:
-        json.dump([item.model_dump() for item in build_configs], sys.stdout, indent=4)
+        json.dump([item.model_dump() for item in build_configs], sys.stdout)
 
 
 if __name__ == "__main__":
