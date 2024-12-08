@@ -126,7 +126,7 @@ jobs:
         run: |
           uv run build.py --root "${{ matrix.directory }}" > build_output.json
           echo "image=$(cat build_output.json)" >> $GITHUB_OUTPUT
-          echo "tags=$(jq -c '.tags' build_output.json)" >> $GITHUB_OUTPUT
+          echo "tags=$(jq -r '.tags | join(",")' build_output.json)" >> $GITHUB_OUTPUT
           echo "labels=$(jq -c '.labels' build_output.json)" >> $GITHUB_OUTPUT
 
       - name: Python Build Cache for Docker
@@ -148,7 +148,7 @@ jobs:
           context: ${{ matrix.directory }}
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: ${{ fromJson(steps.context.outputs.tags) }}
+          tags: ${{ steps.context.outputs.tags }}
           labels: ${{ fromJson(steps.context.outputs.labels) }}
           cache-from: type=gha
           cache-to: type=gha,mode=min
