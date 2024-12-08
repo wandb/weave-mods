@@ -148,7 +148,7 @@ jobs:
           context: ${{ matrix.directory }}
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: ${{ join(steps.context.outputs.tags, ',') }}
-          labels: ${{ toJson(steps.context.outputs.labels) }}
+          tags: ${{ fromJson(steps.context.outputs.tags) }}
+          labels: ${{ fromJson(steps.context.outputs.labels) }}
           cache-from: type=gha
           cache-to: type=gha,mode=min
