@@ -49,7 +49,7 @@ jobs:
           fi
 
           # Get a list of changed files
-          CHANGED_FILES=$(git diff --name-only $BASE_SHA HEAD)
+          CHANGED_FILES=$(git diff --name-only $BASE_SHA HEAD | tr '\n' ' ')
           echo "CHANGED_FILES=$CHANGED_FILES" >> $GITHUB_OUTPUT
 
       - name: Filter directories with pyproject.toml
