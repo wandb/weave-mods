@@ -23,9 +23,10 @@ RUN --mount=type=cache,uid=999,gid=999,target=/app/.cache/uv \
 
 ENV PATH=/app/src/.venv/bin:${PATH}
 
-EXPOSE 6637
+EXPOSE 6637 6638
 
 ENTRYPOINT ["/app/.local/bin/dumb-init", "--"]
 
-# This get's populated by our build script
+# This get's populated by our build script and should start the healthcheck
+# and then the mod entrypoint
 CMD $$MOD_ENTRYPOINT

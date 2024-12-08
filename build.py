@@ -10,11 +10,12 @@
 
 import json
 import os
+import shutil
 import subprocess
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Annotated, List
+from typing import Annotated, Dict, List, Optional
 
 import toml
 import typer
@@ -22,11 +23,13 @@ from pydantic import BaseModel
 
 env = os.getenv("ENVIRONMENT")
 if env == "production" or env == "prod":
-    REGISTRY = "gcr.io/wandb-production"
+    REGISTRY = "us-central1-docker.pkg.dev/wandb-production/mods"
 elif env == "qa":
-    REGISTRY = "gcr.io/wandb-qa"
+    REGISTRY = "us-central1-docker.pkg.dev/wandb-qa/mods"
 else:
-    REGISTRY = "localhost:5001"
+    REGISTRY = "localhost:5001/mods"
+
+REGISTRY = os.getenv("REGISTRY", REGISTRY)
 
 app = typer.Typer()
 
@@ -51,6 +54,13 @@ class ModConfig(BaseModel):
     description: str
     version: str
     secrets: List[str]
+
+
+class DockerConfig(BaseModel):
+    directory: str
+    dockerfile: str
+    tags: List[str]
+    labels: Dict[str, str]
 
 
 def details_from_config(pyproject_path: Path) -> dict:
@@ -90,7 +100,24 @@ def exec_read(cmd: str) -> str:
 
 @app.command()
 def build(
-    root: Annotated[str, typer.Argument()] = "mods",
+    directories: Annotated[
+        Optional[List[str]],
+        typer.Argument(
+            ...,
+            help="Directories to build. If not provided, all directories with pyproject.toml will be built.",
+        ),
+    ] = None,
+    root: str = typer.Option(
+        "mods", "--root", help="Root directory to search for pyproject.toml"
+    ),
+    platform: str = typer.Option(
+        "linux/amd64,linux/arm64", "--platform", help="Docker platform arg"
+    ),
+    build: Optional[bool] = typer.Option(
+        None,
+        "--build",
+        help="Actually build the images, defaults to true when REGISTRY is localhost",
+    ),
     upgrade: bool = typer.Option(
         False, "--upgrade", help="Upgrade dependencies before building"
     ),
@@ -98,15 +125,34 @@ def build(
     template_path = Path(__file__).parent / "Dockerfile.template"
     git_sha = exec_read("git rev-parse HEAD")
     mod_configs: List[ModConfig] = []
+    if build is None:
+        build = "localhost:" in REGISTRY
+    # If no directories specified, build all
+    if not directories:
+        directories = [
+            str(p.parent)
+            for p in Path(root).rglob("pyproject.toml")
+            if ".venv" not in p.parts
+        ]
+
+    mod_configs = []
+    build_configs = []
+    healthcheck = Path(__file__).parent / "mods" / "healthcheck.py"
     # Loop over all directories containing 'pyproject.toml' under 'mods/'
-    for pyproject in Path(root).rglob("pyproject.toml"):
-        # Skip if '.venv' is in any part of the path
-        if ".venv" in pyproject.parts:
+    for dir_str in directories:
+        dir_path = Path(dir_str)
+        pyproject = dir_path / "pyproject.toml"
+        if not pyproject.exists():
+            typer.secho(
+                f"Skipping directory: {dir_path} (no pyproject.toml)",
+                fg=typer.colors.YELLOW,
+            )
             continue
-        dir_path = pyproject.parent
+
         typer.secho(f"Processing directory: {dir_path}", fg=typer.colors.GREEN)
         dockerfile_path = dir_path / "Dockerfile"
         dockerignore_path = dir_path / ".dockerignore"
+        healthcheck_path = dir_path / "healthcheck.py"
         try:
             if upgrade:
                 typer.secho("Upgrading dependencies...", fg=typer.colors.YELLOW)
@@ -121,23 +167,26 @@ def build(
 
             # Replace '$$MOD_ENTRYPOINT$$' with '["python", "app.py"]'
             mod_config = details_from_config(pyproject)
-            typer.secho(
-                f"Entrypoint: {" ".join(mod_config.entrypoint)}", fg=typer.colors.YELLOW
-            )
             new_content = template_content.replace(
-                "$$MOD_ENTRYPOINT", json.dumps(mod_config.entrypoint)
+                "$$MOD_ENTRYPOINT",
+                " ".join(
+                    ["python", "/app/src/healthcheck.py", "&"] + mod_config.entrypoint
+                ),
             )
 
             # Write the new Dockerfile
             with dockerfile_path.open("w") as f:
                 f.write(new_content)
 
+            # Copy healthcheck.py to the mod directory
+            shutil.copy(healthcheck, dir_path)
+
             # Build the Docker image
             docker_tags = [
                 "-t",
-                f"{REGISTRY}/mods/{mod_config.name}:{mod_config.version}",
+                f"{REGISTRY}/{mod_config.name}:{mod_config.version}",
                 "-t",
-                f"{REGISTRY}/mods/{mod_config.name}:latest",
+                f"{REGISTRY}/{mod_config.name}:latest",
             ]
 
             labels = {
@@ -156,18 +205,50 @@ def build(
             for key, value in labels.items():
                 label_args.extend(["--label", f"{key}={value}"])
 
-            subprocess.run(
-                ["docker", "build", ".", *docker_tags, *label_args, "--load"],
-                cwd=dir_path,
-                check=True,
-            )
+            if build:
+                subprocess.run(
+                    [
+                        "docker",
+                        "buildx",
+                        "build",
+                        ".",
+                        "--platform",
+                        platform,
+                        *docker_tags,
+                        *label_args,
+                        "--load",
+                    ],
+                    cwd=dir_path,
+                    check=True,
+                )
+                typer.secho(f"Built image: {docker_tags[1]}", fg=typer.colors.GREEN)
+            else:
+                typer.secho(
+                    f"Discovered image: {docker_tags[1]}", fg=typer.colors.GREEN
+                )
+                build_configs.append(
+                    DockerConfig(
+                        directory=str(dir_path),
+                        dockerfile=dockerfile_path.name,
+                        tags=[t for t in docker_tags if t != "-t"],
+                        labels=labels,
+                    )
+                )
             mod_configs.append(mod_config)
-            typer.secho(f"Built image: {docker_tags[1]}", fg=typer.colors.GREEN)
         finally:
-            # Clean up: remove '.dockerignore' and 'Dockerfile'
-            dockerignore_path.unlink(missing_ok=True)
-            dockerfile_path.unlink(missing_ok=True)
-    json.dump([item.dict() for item in mod_configs], sys.stdout, indent=4)
+            # Clean up '.dockerignore' and 'Dockerfile' only if we built locally
+            if build:
+                healthcheck_path.unlink(missing_ok=True)
+                dockerignore_path.unlink(missing_ok=True)
+                dockerfile_path.unlink(missing_ok=True)
+    typer.secho(
+        f"{'Built' if build else 'Discovered'} {len(mod_configs)} mods",
+        fg=typer.colors.GREEN,
+    )
+    if build:
+        json.dump([item.model_dump() for item in mod_configs], sys.stdout, indent=4)
+    else:
+        json.dump([item.model_dump() for item in build_configs], sys.stdout, indent=4)
 
 
 if __name__ == "__main__":
