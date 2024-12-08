@@ -10,6 +10,12 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
+    inputs:
+      directory:
+        description: "Directory containing pyproject.toml to build"
+        required: true
+        type: string
 
 jobs:
   discover:
@@ -20,6 +26,62 @@ jobs:
         with:
           # Fetch the last commit as well so we can compare against it
           fetch-depth: 2
+
+      - name: Determine Changed Directories
+        id: changed
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            # For manual triggers, use the specified directory
+            if [ -f "${{ github.event.inputs.directory }}/pyproject.toml" ]; then
+              # Output as JSON array with single item
+              echo "changed_dirs=[\"${{ github.event.inputs.directory }}\"]" >> $GITHUB_OUTPUT
+            else
+              echo "Error: No pyproject.toml found in ${{ github.event.inputs.directory }}"
+              exit 1
+            fi
+          else
+            # Compare current commit to the base commit (for PRs) or the last commit (for push)
+            if [ "${{ github.event_name }}" = "pull_request" ]; then
+              BASE_SHA="${{ github.event.pull_request.base.sha }}"
+            else
+              BASE_SHA="$(git rev-parse HEAD~1)"
+            fi
+
+            # Get changed files and find directories with pyproject.toml
+            changed_files=$(git diff --name-only $BASE_SHA HEAD)
+            dirs=()
+            for f in $changed_files; do
+              d=$(dirname "$f")
+              if [ -f "$d/pyproject.toml" ]; then
+                dirs+=("$d")
+              fi
+            done
+
+            # Remove duplicates and format for output
+            unique_dirs=$(printf "%s\n" "${dirs[@]}" | sort -u)
+            if [ -z "$unique_dirs" ]; then
+              echo "No directories with pyproject.toml changed."
+              echo "changed_dirs=[]" >> $GITHUB_OUTPUT
+            else
+              # Convert to JSON array
+              json_array=$(printf '%s\n' "${dirs[@]}" | jq -R . | jq -c -s .)
+              echo "changed_dirs=$json_array" >> $GITHUB_OUTPUT
+            fi
+          fi
+    outputs:
+      changed_dirs: ${{ steps.changed.outputs.changed_dirs }}
+
+  build-and-push:
+    needs: discover
+    if: ${{ needs.discover.outputs.changed_dirs != '[]' }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        directory: ${{ fromJson(needs.discover.outputs.changed_dirs) }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
 
       - name: Determine registry
         id: registry
@@ -34,90 +96,14 @@ jobs:
             echo "sa=" >> $GITHUB_OUTPUT
           fi
 
-      - name: Install the latest version of uv
-        uses: astral-sh/setup-uv@v4
-
-      - name: Determine Changed Directories
-        id: changed
-        run: |
-          # Compare current commit to the base commit (for PRs) or the last commit (for push)
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            BASE_SHA="${{ github.event.pull_request.base.sha }}"
-          else
-            # Just use HEAD~1 for direct pushes
-            BASE_SHA="$(git rev-parse HEAD~1)"
-          fi
-
-          # Get a list of changed files
-          CHANGED_FILES=$(git diff --name-only $BASE_SHA HEAD | tr '\n' ' ')
-          echo "CHANGED_FILES=$CHANGED_FILES" >> $GITHUB_OUTPUT
-
-      - name: Filter directories with pyproject.toml
-        id: filter
-        run: |
-          changed_files="${{ steps.changed.outputs.CHANGED_FILES }}"
-          dirs=()
-          # Extract directories from changed files
-          for f in $changed_files; do
-            d=$(dirname "$f")
-            if [ -f "$d/pyproject.toml" ]; then
-              dirs+=("$d")
-            fi
-          done
-
-          # Remove duplicates
-          unique_dirs=$(printf "%s\n" "${dirs[@]}" | sort -u)
-
-          if [ -z "$unique_dirs" ]; then
-            echo "No directories with pyproject.toml changed."
-            echo "changed_dirs=" >> $GITHUB_OUTPUT
-          else
-            echo "Will build these directories: $unique_dirs"
-            echo "changed_dirs=$(echo $unique_dirs | tr ' ' ',')" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Build Only Changed Directories
-        if: ${{ steps.filter.outputs.changed_dirs != '' }}
-        env:
-          REGISTRY: ${{ steps.registry.outputs.registry }}
-        run: |
-          IFS=',' read -r -a dirs <<< "${{ steps.filter.outputs.changed_dirs }}"
-          echo "Building directories: ${dirs[*]}"
-          uv run build.py build "${dirs[@]}"
-
-      - name: Generate Dockerfiles and Tags JSON
-        if: ${{ steps.filter.outputs.changed_dirs != '' }}
-        id: generate
-        env:
-          REGISTRY: ${{ steps.registry.outputs.registry }}
-        run: |
-          IFS=',' read -r -a dirs <<< "${{ steps.filter.outputs.changed_dirs }}"
-          # Run your Python build script which generates a JSON array of objects
-          # Each object: {"directory":..., "dockerfile":..., "tags":[...]}
-          uv run build.py build "${dirs[@]}" > build_output.json
-          echo "images=$(cat build_output.json)" >> $GITHUB_OUTPUT
-    outputs:
-      images: ${{ steps.generate.outputs.images }}
-      registry: ${{ steps.registry.outputs.registry }}
-      idpool: ${{ steps.registry.outputs.idpool }}
-      sa: ${{ steps.registry.outputs.sa }}
-
-  build-and-push:
-    needs: discover
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        include: ${{ fromJson(needs.discover.outputs.images) }}
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v3
-
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
       - name: QEMU
         uses: docker/setup-qemu-action@v2
+
+      - name: Install the latest version of uv
+        uses: astral-sh/setup-uv@v4
 
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v2
@@ -127,18 +113,16 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Authenticate to GCP
-        if: ${{ needs.discover.outputs.idpool != '' }}
+        if: ${{ steps.registry.outputs.idpool != '' }}
         uses: google-github-actions/auth@v1
         with:
-          workload_identity_provider: ${{ needs.discover.outputs.idpool }}
-          service_account: ${{ needs.discover.outputs.sa }}
-
-      - name: Install the latest version of uv
-        uses: astral-sh/setup-uv@v4
+          workload_identity_provider: ${{ steps.registry.outputs.idpool }}
+          service_account: ${{ steps.registry.outputs.sa }}
 
       - name: Generate context
+        id: context
         env:
-          REGISTRY: ${{ needs.discover.outputs.registry }}
+          REGISTRY: ${{ steps.registry.outputs.registry }}
         run: |
           uv run build.py --root "${{ matrix.directory }}" > build_output.json
           echo "image=$(cat build_output.json)" >> $GITHUB_OUTPUT
@@ -155,13 +139,6 @@ jobs:
         uses: reproducible-containers/buildkit-cache-dance@4b2444fec0c0fb9dbf175a96c094720a692ef810 # v2.1.4
         with:
           cache-source: python-build-cache
-      # Each matrix job corresponds to a single image described by the JSON:
-      # matrix include entries look like:
-      # {
-      #   "directory": "...",
-      #   "labels": {...},
-      #   "tags": ["registry/repo:version", "registry/repo:latest"]
-      # }
 
       - name: Docker Buildx (Build & Push)
         uses: docker/build-push-action@v4
@@ -169,7 +146,7 @@ jobs:
           context: ${{ matrix.directory }}
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: ${{ join(matrix.tags, ',') }}
-          labels: ${{ toJson(matrix.labels) }}
+          tags: ${{ join(steps.context.outputs.tags, ',') }}
+          labels: ${{ toJson(steps.context.outputs.labels) }}
           cache-from: type=gha
           cache-to: type=gha,mode=min
