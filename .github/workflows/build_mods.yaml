@@ -64,7 +64,7 @@ jobs:
               echo "changed_dirs=[]" >> $GITHUB_OUTPUT
             else
               # Convert to JSON array
-              json_array=$(printf '%s\n' "${dirs[@]}" | jq -R . | jq -c -s .)
+              json_array=$(printf '%s\n' "${unique_dirs[@]}" | jq -R . | jq -c -s .)
               echo "changed_dirs=$json_array" >> $GITHUB_OUTPUT
             fi
           fi

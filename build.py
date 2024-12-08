@@ -249,7 +249,10 @@ def build(
     if build:
         json.dump([item.model_dump() for item in mod_configs], sys.stdout, indent=4)
     else:
-        json.dump([item.model_dump() for item in build_configs], sys.stdout)
+        if len(build_configs) == 1:
+            json.dump(build_configs[0].model_dump(), sys.stdout)
+        else:
+            json.dump([item.model_dump() for item in build_configs], sys.stdout)
 
 
 if __name__ == "__main__":
