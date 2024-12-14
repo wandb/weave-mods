@@ -119,6 +119,11 @@ jobs:
           workload_identity_provider: ${{ steps.registry.outputs.idpool }}
           service_account: ${{ steps.registry.outputs.sa }}
 
+      - name: Configure Docker for Artifact Registry
+        if: ${{ steps.registry.outputs.idpool != '' }}
+        run: |
+          gcloud auth configure-docker us-central1-docker.pkg.dev
+
       - name: Generate context
         id: context
         env:

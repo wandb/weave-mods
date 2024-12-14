@@ -23,5 +23,6 @@ docker-ghlogin token=`gh auth token` user=`gh api user -q .login`: _check-gh-aut
     echo {{token}} | docker login ghcr.io -u {{user}} --password-stdin
 
 build-mod directory ref=ref:
-    gh workflow run build_mods.yaml -f directory={{directory}} --ref={{ref}} --watch
+    gh workflow run build_mods.yaml -f directory={{directory}} --ref={{ref}}
+    sleep 1
     gh run watch
