@@ -52,7 +52,7 @@ jobs:
             dirs=()
             for f in $changed_files; do
               d=$(dirname "$f")
-              if [ -f "$d/pyproject.toml" ]; then
+              if [[ "$d" == mods/* ]] && [ -f "$d/pyproject.toml" ]; then
                 dirs+=("$d")
               fi
             done
