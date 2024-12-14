@@ -88,7 +88,7 @@ jobs:
         run: |
           if [ "${{ github.ref_name }}" = "main" ]; then
             echo "registry=us-central1-docker.pkg.dev/wandb-qa/mods" >> $GITHUB_OUTPUT
-            echo "idpool=projects/281760294016/locations/global/workloadIdentityPools/weave-mods-pool" >> $GITHUB_OUTPUT
+            echo "idpool=projects/281760294016/locations/global/workloadIdentityPools/weave-mods-pool/providers/github" >> $GITHUB_OUTPUT
             echo "sa=weave-mods-builder@wandb-qa.iam.gserviceaccount.com" >> $GITHUB_OUTPUT
           else
             echo "registry=ghcr.io/wandb/weave-mods" >> $GITHUB_OUTPUT

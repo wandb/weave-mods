@@ -24,5 +24,5 @@ docker-ghlogin token=`gh auth token` user=`gh api user -q .login`: _check-gh-aut
 
 build-mod directory ref=ref:
     gh workflow run build_mods.yaml -f directory={{directory}} --ref={{ref}}
-    sleep 1
+    sleep 3
     gh run watch
