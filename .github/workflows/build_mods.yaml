@@ -1,0 +1,154 @@
+name: Build Mods
+
+permissions:
+  contents: read
+  id-token: write
+  packages: write
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      directory:
+        description: "Directory containing pyproject.toml to build"
+        required: true
+        type: string
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+        with:
+          # Fetch the last commit as well so we can compare against it
+          fetch-depth: 2
+
+      - name: Determine Changed Directories
+        id: changed
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            # For manual triggers, use the specified directory
+            if [ -f "${{ github.event.inputs.directory }}/pyproject.toml" ]; then
+              # Output as JSON array with single item
+              echo "changed_dirs=[\"${{ github.event.inputs.directory }}\"]" >> $GITHUB_OUTPUT
+            else
+              echo "Error: No pyproject.toml found in ${{ github.event.inputs.directory }}"
+              exit 1
+            fi
+          else
+            # Compare current commit to the base commit (for PRs) or the last commit (for push)
+            if [ "${{ github.event_name }}" = "pull_request" ]; then
+              BASE_SHA="${{ github.event.pull_request.base.sha }}"
+            else
+              BASE_SHA="$(git rev-parse HEAD~1)"
+            fi
+
+            # Get changed files and find directories with pyproject.toml
+            changed_files=$(git diff --name-only $BASE_SHA HEAD)
+            dirs=()
+            for f in $changed_files; do
+              d=$(dirname "$f")
+              if [ -f "$d/pyproject.toml" ]; then
+                dirs+=("$d")
+              fi
+            done
+
+            # Remove duplicates and format for output
+            unique_dirs=$(printf "%s\n" "${dirs[@]}" | sort -u)
+            if [ -z "$unique_dirs" ]; then
+              echo "No directories with pyproject.toml changed."
+              echo "changed_dirs=[]" >> $GITHUB_OUTPUT
+            else
+              # Convert to JSON array
+              json_array=$(printf '%s\n' "${unique_dirs[@]}" | jq -R . | jq -c -s .)
+              echo "changed_dirs=$json_array" >> $GITHUB_OUTPUT
+            fi
+          fi
+    outputs:
+      changed_dirs: ${{ steps.changed.outputs.changed_dirs }}
+
+  build-and-push:
+    needs: discover
+    if: ${{ needs.discover.outputs.changed_dirs != '[]' }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        directory: ${{ fromJson(needs.discover.outputs.changed_dirs) }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Determine registry
+        id: registry
+        run: |
+          if [ "${{ github.ref_name }}" = "main" ]; then
+            echo "registry=us-central1-docker.pkg.dev/wandb-qa/mods" >> $GITHUB_OUTPUT
+            echo "idpool=projects/281760294016/locations/global/workloadIdentityPools/weave-mods-pool" >> $GITHUB_OUTPUT
+            echo "sa=weave-mods-builder@wandb-qa.iam.gserviceaccount.com" >> $GITHUB_OUTPUT
+          else
+            echo "registry=ghcr.io/wandb/weave-mods" >> $GITHUB_OUTPUT
+            echo "idpool=" >> $GITHUB_OUTPUT
+            echo "sa=" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: QEMU
+        uses: docker/setup-qemu-action@v2
+
+      - name: Install the latest version of uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Authenticate to GCP
+        if: ${{ steps.registry.outputs.idpool != '' }}
+        uses: google-github-actions/auth@v1
+        with:
+          workload_identity_provider: ${{ steps.registry.outputs.idpool }}
+          service_account: ${{ steps.registry.outputs.sa }}
+
+      - name: Generate context
+        id: context
+        env:
+          REGISTRY: ${{ steps.registry.outputs.registry }}
+        run: |
+          uv run build.py --root "${{ matrix.directory }}" > build_output.json
+          echo "image=$(cat build_output.json)" >> $GITHUB_OUTPUT
+          echo "tags=$(jq -r '.tags | join(",")' build_output.json)" >> $GITHUB_OUTPUT
+          echo "labels=$(jq -c '.labels' build_output.json)" >> $GITHUB_OUTPUT
+
+      - name: Python Build Cache for Docker
+        uses: actions/cache@v4
+        with:
+          path: python-build-cache
+          key: ${{ runner.os }}-python-build-cache-${{ hashFiles('**/pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-python-build-cache-
+
+      - name: Inject python-build-cache
+        uses: reproducible-containers/buildkit-cache-dance@4b2444fec0c0fb9dbf175a96c094720a692ef810 # v2.1.4
+        with:
+          cache-source: python-build-cache
+
+      - name: Docker Buildx (Build & Push)
+        uses: docker/build-push-action@v4
+        with:
+          context: ${{ matrix.directory }}
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.context.outputs.tags }}
+          labels: ${{ steps.context.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=min

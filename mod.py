@@ -10,6 +10,7 @@
 import os
 import subprocess
 import sys
+from enum import Enum
 from pathlib import Path
 from typing import Annotated
 
@@ -17,6 +18,94 @@ import toml
 import typer
 
 app = typer.Typer()
+
+
+class VersionPart(str, Enum):
+    MAJOR = "major"
+    MINOR = "minor"
+    PATCH = "patch"
+
+
+@app.command()
+def bump(
+    directory: Annotated[str, typer.Argument()] = ".",
+    part: Annotated[
+        VersionPart, typer.Option(help="Version part to bump")
+    ] = VersionPart.MINOR,
+    no_upgrade: Annotated[
+        bool, typer.Option(help="Skip running uv lock --upgrade")
+    ] = False,
+):
+    """Bump the version in pyproject.toml and optionally upgrade dependencies."""
+    # Find and parse pyproject.toml
+    pyproject_path = os.path.join(directory, "pyproject.toml")
+    if not os.path.exists(pyproject_path):
+        typer.secho(
+            f"Error: pyproject.toml not found in {directory}",
+            fg=typer.colors.RED,
+        )
+        sys.exit(1)
+
+    try:
+        with open(pyproject_path, "r") as f:
+            pyproject = toml.load(f)
+    except Exception as e:
+        typer.secho(f"Error parsing pyproject.toml: {e}", fg=typer.colors.RED)
+        sys.exit(1)
+
+    # Get current version
+    current_version = pyproject.get("project", {}).get("version")
+    if not current_version:
+        typer.secho(
+            "Error: No version found in pyproject.toml [project] section",
+            fg=typer.colors.RED,
+        )
+        sys.exit(1)
+
+    # Parse version
+    try:
+        major, minor, patch = map(int, current_version.split("."))
+    except ValueError:
+        typer.secho(
+            f"Error: Invalid version format {current_version}. Expected x.y.z",
+            fg=typer.colors.RED,
+        )
+        sys.exit(1)
+
+    # Bump version
+    if part == VersionPart.MAJOR:
+        major += 1
+        minor = 0
+        patch = 0
+    elif part == VersionPart.MINOR:
+        minor += 1
+        patch = 0
+    else:  # PATCH
+        patch += 1
+
+    new_version = f"{major}.{minor}.{patch}"
+    pyproject["project"]["version"] = new_version
+
+    # Write updated pyproject.toml
+    try:
+        with open(pyproject_path, "w") as f:
+            toml.dump(pyproject, f)
+        typer.secho(
+            f"Bumped version from {current_version} to {new_version}",
+            fg=typer.colors.GREEN,
+        )
+    except Exception as e:
+        typer.secho(f"Error writing to pyproject.toml: {e}", fg=typer.colors.RED)
+        sys.exit(1)
+
+    # Run uv lock --upgrade if not disabled
+    if not no_upgrade:
+        try:
+            subprocess.run(["uv", "lock", "--upgrade"], cwd=directory, check=True)
+            typer.secho("Successfully ran 'uv lock --upgrade'", fg=typer.colors.GREEN)
+        except subprocess.CalledProcessError as e:
+            typer.secho(f"Error running 'uv lock --upgrade': {e}", fg=typer.colors.RED)
+            sys.exit(1)
 
 
 @app.command()

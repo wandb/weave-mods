@@ -5,8 +5,6 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import weave
-from datetime import datetime, timedelta
-import itertools
 import json
 import os
 import time
@@ -37,7 +35,12 @@ def fetch_calls(client, project_id, start_time, trace_roots_only, limit):
     filter_params = {
         "project_id": project_id,
         "filter": {"trace_roots_only": trace_roots_only},
-        "columns": ["started_at", "trace_id", "display_name", "op_name"], # , "inputs", "output"
+        "columns": [
+            "started_at",
+            "trace_id",
+            "display_name",
+            "op_name",
+        ],  # , "inputs", "output"
         # "expand_columns": ["inputs.example", "inputs.model"],
         "sort_by": [{"field": "started_at", "direction": "desc"}],
         "include_costs": True,
@@ -153,7 +156,11 @@ def render_dashboard():
     )
 
     # Add custom Weave project URL input with default example
-    default_project_url = os.getenv("WANDB_ENTITY", "vanpelt") + "/" + os.getenv("WANDB_PROJECT", "openui-hosted")
+    default_project_url = (
+        os.getenv("WANDB_ENTITY", "vanpelt")
+        + "/"
+        + os.getenv("WANDB_PROJECT", "openui-hosted")
+    )
     custom_project_url = st.sidebar.text_input(
         "Custom Weave Project URL", value=default_project_url
     )
