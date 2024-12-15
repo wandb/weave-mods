@@ -166,9 +166,9 @@ async def install_deps(deps_file: Path):
     print(f"Installing dependencies from {deps_file}...")
     if deps_file.name == "pyproject.toml":
         process = await asyncio.create_subprocess_exec(
-            "uv",
-            "sync",
+            "uv", "sync", "--no-dev", "--frozen"
         )
+        await process.wait()
         # Install our SDK / mod helpers
         process = await asyncio.create_subprocess_exec(
             "uv",

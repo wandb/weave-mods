@@ -9,3 +9,12 @@ dependencies = ["streamlit>=1.40.0", "weave>=0.51.19"]
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+    "mypy>=1.13.0",
+    "pandas-stubs>=2.2.3.241126",
+]
+
+[tool.uv]
+override-dependencies = ["weave @ git+https://github.com/wandb/weave.git@chore/py-typed"]
