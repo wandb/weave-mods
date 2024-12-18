@@ -12,4 +12,14 @@ dependencies = [
 
 [tool.weave.mod]
 flavor = "streamlit"
-secrets = ["TOGETHER_API_KEY", "WANDB_API_KEY"]
+entrypoint = "Overview.py"
+
+secrets = ["TOGETHER_API_KEY", "WANDB_API_KEY", "OPENAI_API_KEY"]
+
+[tool.uv.sources]
+mods = { path = "../../sdk", editable = true }
+
+[dependency-groups]
+dev = [
+    "mods",
+]

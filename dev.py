@@ -10,9 +10,12 @@
 import os
 import subprocess
 import sys
+import time
+import webbrowser
 from enum import Enum
 from pathlib import Path
 from typing import Annotated
+from urllib.parse import urlparse
 
 import toml
 import typer
@@ -24,6 +27,34 @@ class VersionPart(str, Enum):
     MAJOR = "major"
     MINOR = "minor"
     PATCH = "patch"
+
+
+def host_and_key() -> tuple[str, str | None]:
+    """Get host and key from the .netrc file and settings file."""
+    # Host from config
+    settings_path = os.path.expanduser("~/.config/wandb/settings")
+    host = "https://api.wandb.ai"
+    if os.path.exists(settings_path):
+        with open(settings_path, "r") as f:
+            for line in f.readlines():
+                if line.startswith("base_url"):
+                    host = line.split("=")[-1].strip()
+
+    # Key from config
+    netrc_path = os.path.expanduser("~/.netrc")
+    machine_name = urlparse(host).hostname
+    key = None
+    if os.path.exists(netrc_path):
+        found_machine = False
+        with open(netrc_path, "r") as f:
+            for line in f.readlines():
+                if f"machine {machine_name}" in line:
+                    found_machine = True
+                if found_machine and "password" in line:
+                    key = line.split()[-1].strip()
+                    break
+
+    return host, key
 
 
 @app.command()
@@ -108,7 +139,7 @@ def bump(
             sys.exit(1)
 
 
-@app.command()
+@app.callback(invoke_without_command=True)
 def dev(directory: Annotated[str, typer.Argument()] = "."):
     """Start mod using docker in dev mode."""
     if directory.startswith("pkg:"):
@@ -151,35 +182,31 @@ def dev(directory: Annotated[str, typer.Argument()] = "."):
     port = weave_config.get("port", 6637)
     # Get secrets
     secrets = weave_config.get("secrets", ["OPENAI_API_KEY"])
-    # TODO: likely just read from ~/.config/wandb/settings
-    # if os.getenv("WANDB_BASE_URL") is None:
-    #    os.environ["WANDB_BASE_URL"] = "http://app.k8s.wandb.dev"
+    host, key = host_and_key()
     if os.getenv("WANDB_API_KEY") is None:
-        if os.path.exists(os.path.expanduser("~/.netrc")):
-            found_machine = False
-            with open(os.path.expanduser("~/.netrc"), "r") as f:
-                for line in f.readlines():
-                    if "machine api.k8s.wandb.dev" in line:
-                        found_machine = True
-                    if found_machine and "password" in line:
-                        os.environ["WANDB_API_KEY"] = line.split(" ")[-1].strip()
-                        break
-    if os.getenv("WANDB_API_KEY") is None:
-        typer.secho(
-            "Warning: WANDB_API_KEY not found; you probably want to set this.",
-            fg=typer.colors.RED,
-        )
+        if key is not None:
+            os.environ["WANDB_API_KEY"] = key
+        else:
+            typer.secho(
+                "Warning: WANDB_API_KEY not found; you probably want to set this.",
+                fg=typer.colors.RED,
+            )
+    if os.getenv("WANDB_BASE_URL") is None:
+        os.environ["WANDB_BASE_URL"] = host
     typer.secho(
-        f"Setting WANDB_BASE_URL={os.getenv('WANDB_BASE_URL', "https://api.wandb.ai")}",
+        f"Using server: {os.environ['WANDB_BASE_URL']}",
         fg=typer.colors.BLUE,
     )
+    if os.getenv("WANDB_PROJECT") is None:
+        os.environ["WANDB_PROJECT"] = typer.prompt("WANDB_PROJECT")
     # Build docker command
+    container_name = os.path.basename(Path(directory).resolve())
     docker_command = [
         "docker",
         "run",
         "--rm",
         "--name",
-        os.path.basename(Path(directory).resolve()),
+        container_name,
         "--add-host=app.k8s.wandb.dev:host-gateway",
         "-e",
         f"PURL={purl}",
@@ -188,7 +215,7 @@ def dev(directory: Annotated[str, typer.Argument()] = "."):
         "-e",
         "WANDB_API_KEY",
         "-e",
-        f"WANDB_PROJECT={os.getenv('WANDB_PROJECT', 'mods')}",
+        "WANDB_PROJECT",
         "-p",
         f"{port}:{port}",
         "-v",
@@ -204,16 +231,40 @@ def dev(directory: Annotated[str, typer.Argument()] = "."):
         docker_command.extend(["-e", secret])
     for env in weave_config.get("env", {}).items():
         docker_command.extend(["-e", f"{env[0]}={env[1]}"])
-    docker_command.append("localhost:5001/mods")
+    docker_command.append("localhost:5001/mods/dev")
     # Display command
     typer.secho("Running docker command:", fg=typer.colors.GREEN)
     typer.secho(" ".join(docker_command), fg=typer.colors.BLUE)
-    # Run the command
+    # Run the command and open the browser on success
+    process = subprocess.Popen(docker_command)
     try:
-        subprocess.run(docker_command, check=True)
+        for _ in range(10):
+            health_check = subprocess.run(
+                [
+                    "docker",
+                    "inspect",
+                    "--format",
+                    "{{.State.Health.Status}}",
+                    container_name,
+                ],
+                capture_output=True,
+                text=True,
+            )
+            if health_check.stdout.strip() == "healthy":
+                break
+            print(health_check.stdout)
+            time.sleep(1)
+        if process.poll() is None:
+            webbrowser.open(f"http://localhost:{port}")
     except subprocess.CalledProcessError as e:
         typer.secho(f"Docker command failed: {e}", fg=typer.colors.RED)
-        sys.exit(1)
+    finally:
+        exit_code = process.wait()
+        if exit_code != 0:
+            typer.secho(
+                f"Docker process exited with code {exit_code}", fg=typer.colors.RED
+            )
+        sys.exit(exit_code)
 
 
 @app.command()

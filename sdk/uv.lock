@@ -449,6 +449,7 @@ name = "mods"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "pandas" },
     { name = "streamlit" },
     { name = "weave" },
 ]
@@ -461,6 +462,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "pandas", specifier = ">=2.2.3" },
     { name = "streamlit", specifier = ">=1.40.0" },
     { name = "weave", specifier = ">=0.51.19" },
 ]

@@ -45,6 +45,7 @@ FLAVORS = {
         "--server.address=0.0.0.0",
         "--server.enableCORS=false",
         "--server.enableXsrfProtection=false",
+        "--client.toolbarMode=minimal",
     ],
     "marimo": ["marimo", "run", "--port=6637", "--host=0.0.0.0", "/app/src/app.py"],
 }
@@ -74,6 +75,14 @@ def details_from_config(pyproject_path: Path) -> dict:
     entrypoint = config.get(
         "entrypoint", FLAVORS.get(flavor, ["python", "/app/src/app.py"])
     )
+    if isinstance(entrypoint, str):
+        entrypoint = [entrypoint]
+    # TODO: this is sketchy and likely to be confusing for some poor future dev
+    # Detect a user overriding the entrypoint filename for a streamlit mod
+    if entrypoint[0].endswith(".py") and flavor == "streamlit":
+        file = entrypoint[0]
+        path = os.path.join("/app/src", file)
+        FLAVORS["streamlit"][2] = path
     secrets = config.get("secrets", [])
     project = pyproject.get("project", {})
     description = project.get("description", "A Weave Mod")

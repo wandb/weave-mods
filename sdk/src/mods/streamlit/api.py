@@ -7,18 +7,20 @@ import weave
 from weave.trace.weave_client import WeaveClient
 from weave.wandb_interface import wandb_api
 
-from mods.api.query import ST_HASH_FUNCS, Calls, Op
+from mods.api.query import ST_HASH_FUNCS, Calls, Obj, Op, get_objs
 from mods.api.query import get_calls as api_get_calls
 
 default_entity: str | None = os.getenv("WANDB_ENTITY")
 weave_clients: Dict[str, WeaveClient] = {}
 
 
-@st.cache_data
 def get_default_entity():
-    wandb_api.init()
-    api = wandb_api.get_wandb_api_sync()
-    return api.default_entity_name()
+    global default_entity
+    if default_entity is None:
+        wandb_api.init()
+        api = wandb_api.get_wandb_api_sync()
+        default_entity = api.default_entity_name()
+    return default_entity
 
 
 # TODO: this is unfortunate, but get's the job done for now
@@ -33,7 +35,6 @@ def current_client():
     return weave_client(list(weave_clients.keys())[-1])
 
 
-@st.cache_resource()
 def weave_client(project: str | None = None):
     global weave_clients
     if project is None:
@@ -45,14 +46,14 @@ def weave_client(project: str | None = None):
         raise ValueError(
             "Couldn't determine your team or username, check your WANDB_API_KEY env variable, or set WANDB_ENTITY"
         )
-    if weave_clients.get(project) is None:
-        weave_clients[project] = weave.init(project)
-    return weave_clients[project]
 
+    @st.cache_resource()
+    def _cached_weave_client(project: str):
+        if weave_clients.get(project) is None:
+            weave_clients[project] = weave.init(project)
+        return weave_clients[project]
 
-@st.cache_data(hash_funcs=ST_HASH_FUNCS)
-def cached_calls_for_op(client: WeaveClient, op_name: str | Op | None, input_refs=None):
-    return api_get_calls(client, op_name, input_refs)
+    return _cached_weave_client(project)
 
 
 def get_calls(
@@ -60,14 +61,20 @@ def get_calls(
     op_name: str | List[str] | List[Op] | None,
     input_refs=None,
     cached=True,
-):
+) -> Calls:
     if not cached:
         return api_get_calls(client, op_name, input_refs)
+
+    @st.cache_data(hash_funcs=ST_HASH_FUNCS)
+    def _cached_get_calls(client, op_name, input_refs):
+        return api_get_calls(client, op_name, input_refs)
+
     if not isinstance(op_name, list):
-        return cached_calls_for_op(client, op_name, input_refs)
+        return _cached_get_calls(client, op_name, input_refs)
+
     df = pd.DataFrame()
     for op in op_name:
-        result = cached_calls_for_op(client, op, input_refs)
+        result = _cached_get_calls(client, op, input_refs)
         result.df = result.df.dropna(subset=["id"])
 
         if df.empty:
@@ -76,3 +83,19 @@ def get_calls(
             df = pd.concat([df, result.df], ignore_index=True)
     df = df.set_index("id", drop=False)
     return Calls(df)
+
+
+def get_objects(
+    client: WeaveClient,
+    object_type: str,
+    latest_only: bool = True,
+    cached=True,
+) -> List[Obj]:
+    if not cached:
+        return get_objs(client, object_type, latest_only)
+
+    @st.cache_data(hash_funcs=ST_HASH_FUNCS)
+    def _cached_get_objects(client, object_type, latest_only):
+        return get_objs(client, object_type, latest_only)
+
+    return _cached_get_objects(client, object_type, latest_only)

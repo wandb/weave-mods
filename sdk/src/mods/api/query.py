@@ -76,15 +76,18 @@ def split_obj_ref(series: pd.Series):
     return result
 
 
-@st.cache_data(hash_funcs=ST_HASH_FUNCS)
 def resolve_refs(client, refs):
-    # Resolve the refs and fetch the message.text field
-    # Note we do do this after grouping, so we don't over-fetch refs
-    ref_vals = weave_client_get_batch(client, refs)
-    ref_vals = simple_val(ref_vals)
-    ref_val_df = pd.json_normalize(ref_vals)
-    ref_val_df.index = refs
-    return ref_val_df
+    @st.cache_data(hash_funcs=ST_HASH_FUNCS)
+    def _cached_resolve_refs(client, refs):
+        # Resolve the refs and fetch the message.text field
+        # Note we do do this after grouping, so we don't over-fetch refs
+        ref_vals = weave_client_get_batch(client, refs)
+        ref_vals = simple_val(ref_vals)
+        ref_val_df = pd.json_normalize(ref_vals)
+        ref_val_df.index = refs
+        return ref_val_df
+
+    return _cached_resolve_refs(client, refs)
 
 
 @dataclass
@@ -156,20 +159,12 @@ class Obj:
     def get(self):
         return self.ref().get()
 
+    def __repr__(self):
+        return f"{self.name}:v{self.version_index}"
 
-# @st.cache_data(hash_funcs=ST_HASH_FUNCS)
+
 def get_objs(client, types=None, latest_only=True):
-    # client = weave.init(project_name)
     client_objs = weave_client_objs(client, types=types, latest_only=latest_only)
-    refs = []
-    objs = []
-    for v in client_objs:
-        entity, project = v.project_id.split("/", 1)
-        refs.append(ObjectRef(entity, project, v.object_id, v.digest).uri())
-        objs.append(v.val)
-        # TODO there is other metadata like created at
-    df = pd.json_normalize([simple_val(v) for v in objs])
-    df.index = refs
     return list(
         reversed(
             sorted(
@@ -187,7 +182,6 @@ def get_objs(client, types=None, latest_only=True):
             )
         )
     )
-    # return [Op(op.object_id, op.version_index) for op in client_ops]
 
 
 def friendly_dtypes(df):
@@ -310,13 +304,3 @@ def get_calls(
     """
 
     return Calls(df_final)
-
-
-@st.cache_data(hash_funcs=ST_HASH_FUNCS)
-def cached_get_calls(
-    client: WeaveClient,
-    op_name: str | List[str] | List[Op] | None,
-    input_refs=None,
-    cache_key=None,
-):
-    return get_calls(client, op_name, input_refs, cache_key)

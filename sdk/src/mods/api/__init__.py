@@ -1,5 +1,4 @@
 from .query import (
-    cached_get_calls,
     get_calls,
     get_objs,
     get_op_versions,
@@ -9,7 +8,6 @@ from .query import (
 
 __all__ = [
     "get_calls",
-    "cached_get_calls",
     "get_objs",
     "resolve_refs",
     "get_ops",

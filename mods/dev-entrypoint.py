@@ -209,8 +209,11 @@ async def main():
                 tool = pyproject.get("tool", {})
                 weave_config = tool.get("weave", {"mod": {}})
                 flavor = weave_config["mod"]["flavor"]
+                # TODO: this won't really work for custom mods
                 if weave_config["mod"].get("entrypoint") is not None:
                     entrypoint = weave_config["mod"]["entrypoint"]
+                    if isinstance(entrypoint, str):
+                        entrypoint = [entrypoint]
             if isinstance(entrypoint, Path):
                 entrypoint = [str(entrypoint)]
             elif entrypoint is None:
@@ -235,7 +238,6 @@ async def main():
                 raise ValueError("Unable to determine mod flavor")
         else:
             raise ValueError("Unable to determine mod flavor")
-    prefix = os.getenv("SPIDERWEB_PREFIX", "")
     if flavor == "streamlit":
         args = [
             "uv",
@@ -245,10 +247,10 @@ async def main():
             "run",
             *entrypoint,
             "--server.port=" + os.getenv("PORT"),
-            f"--server.baseUrlPath={prefix}",
             "--server.address=0.0.0.0",
             "--server.enableCORS=false",
             "--server.enableXsrfProtection=false",
+            "--client.toolbarMode=developer",
         ]
     elif flavor == "marimo":
         args = [
