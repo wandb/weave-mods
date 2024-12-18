@@ -16,15 +16,22 @@ make build-dev
 ### Run a mod locally in dev mode
 
 ```bash
-./mod.py dev mods/welcome
+./dev.py mods/welcome
 ```
 
 > NOTE: ensure you're logged into wandb and you'll likely want to set the WANDB_PROJECT env var to a project with existing weave trace data.
 
-## Create your own mod!
+### Create your own mod!
 
 ```bash
-./mod.py create my_mod
+./dev.py create my_mod
+```
+
+### Add dependencies
+
+```bash
+cd mods/my_mod
+uv add openai
 ```
 
 ## What's in a mod?
@@ -59,6 +66,10 @@ The secrets specified will automatically be exposed to the container.  When a mo
 ### Linked Mods
 
 You can take existing repositories and turn them into a mod!  See `mods/openui` for an example.
+
+## Mods SDK
+
+This repo also includes a Python SDK with weave api helpers in `sdk`.  If you find yourself implementing custom logic for interacting with weave, consider adding it to the SDK.  Learn more at [sdk/README.md](sdk/README.md).
 
 ## What about arbitrary Docker images?
 
