@@ -1,5 +1,5 @@
 import json
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple, Union
 
 import pandas as pd
 import streamlit as st
@@ -57,7 +57,9 @@ def safe_df(df: pd.DataFrame):
     return df
 
 
-def _format_table_for_openai(calls: query.Calls) -> Dict[str, st.column_config.Column]:
+def _format_table_for_openai(
+    calls: query.Calls,
+) -> Dict[str, Union[st.column_config.Column, None]]:
     # id, trace_id
     column_config = {
         "id": st.column_config.LinkColumn("ID", display_text=r".+/call/(.+?)-"),
@@ -98,7 +100,7 @@ def tracetable(
     dataframe: pd.DataFrame | None = None,
     cached: bool = True,
     client: WeaveClient | None = None,
-) -> Tuple[query.Calls, int | None]:
+) -> Tuple[query.Calls, Optional[int]]:
     """Creates an interactive Streamlit table for displaying and selecting trace data.
 
     This function generates a Streamlit dataframe component that displays trace data
@@ -132,10 +134,15 @@ def tracetable(
     else:
         calls = query.Calls(dataframe)
     column_config = {}
-    if not isinstance(op_names, list):
-        op_names = [op_names]
+
+    op_names_list: List[str] = []
+    if isinstance(op_names, str):
+        op_names_list = [op_names]
+    elif isinstance(op_names, list):
+        op_names_list = op_names
+
     # TODO: this is a hack, we should have a better way to detect if the table is for openai
-    if op_names[0] and "openai.chat" in op_names[0]:
+    if op_names_list and "openai.chat" in op_names_list[0]:
         column_config = _format_table_for_openai(calls)
     selected = st.dataframe(
         safe_df(calls.df),

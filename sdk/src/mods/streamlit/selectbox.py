@@ -1,5 +1,14 @@
 from enum import Enum, auto
-from typing import Any, Callable, List, Literal, Optional, TypeVar, Union, overload
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    List,
+    Optional,
+    ParamSpec,
+    TypeVar,
+    Union,
+)
 
 import streamlit as st
 from weave.trace.weave_client import WeaveClient
@@ -17,53 +26,17 @@ class BoxSelector(Enum):
 
 T = TypeVar("T")
 
-
-@overload
-def selectbox(
-    label: str,
-    selector: Literal[BoxSelector.OP],
-    sort_key: Optional[Callable[[query.Op], Any]] = None,
-    object_types: None = None,
-    client: Optional[WeaveClient] = None,
-) -> Optional[query.Op]: ...
-
-
-@overload
-def selectbox(
-    label: str,
-    selector: Literal[BoxSelector.DATASET],
-    sort_key: Optional[Callable[[query.Obj], Any]] = None,
-    object_types: None = None,
-    client: Optional[WeaveClient] = None,
-) -> Optional[query.Obj]: ...
-
-
-@overload
-def selectbox(
-    label: str,
-    selector: Literal[BoxSelector.MODEL],
-    sort_key: Optional[Callable[[query.Obj], Any]] = None,
-    object_types: None = None,
-    client: Optional[WeaveClient] = None,
-) -> Optional[query.Obj]: ...
-
-
-@overload
-def selectbox(
-    label: str,
-    selector: Literal[BoxSelector.OBJECT],
-    sort_key: Optional[Callable[[query.Obj], Any]] = None,
-    object_types: Union[List[str], str, None] = None,
-    client: Optional[WeaveClient] = None,
-) -> Optional[query.Obj]: ...
+SelectOptions = Union[BoxSelector, List[T]]
 
 
 def selectbox(
     label: str,
-    selector: BoxSelector,
+    options: SelectOptions,
+    *args,
     sort_key: Optional[Callable[[Any], Any]] = None,
     object_types: Union[List[str], str, None] = None,
     client: Optional[WeaveClient] = None,
+    **kwargs,
 ) -> Optional[Union[query.Op, query.Obj]]:
     """Create a Streamlit selectbox for various Weave object types.
 
@@ -86,12 +59,19 @@ def selectbox(
     """
     if client is None:
         client = current_client()
-    kwargs = {}
-    if sort_key is not None:
-        kwargs["sort_key"] = sort_key
-    if object_types is not None:
-        kwargs["object_types"] = object_types
-    return selectors[selector](client, label, **kwargs)
+
+    if isinstance(options, BoxSelector):
+        kwargs: dict[str, Any] = {}
+        if sort_key is not None:
+            kwargs["sort_key"] = sort_key
+        if object_types is not None:
+            kwargs["object_types"] = object_types
+        selector_func = selectors.get(options)
+        return selector_func(client, label, **kwargs)
+    elif isinstance(options, list):
+        return st.selectbox(label, options=options, *args, **kwargs)
+    else:
+        raise ValueError(f"Invalid options type: {type(options)}")
 
 
 def op_selectbox(
@@ -125,15 +105,18 @@ def obj_selectbox(
     objs = query.get_objs(client, types=object_types)
     if sort_key:
         objs = sorted(objs, key=sort_key)
+    # TODO: this article nonsense is a bit of a mess
     thing = "Object"
+    article = "an"
     if len(object_types) > 0:
         thing = object_types[0]
+        article = "a"
     return st.selectbox(
         label,
         options=objs,
         index=None,
-        placeholder=f"Select an {thing}...",
-        format_func=lambda o: f"{o.ref().name}:{o.ref().digest[:3]}",
+        placeholder=f"Select {article} {thing}...",
+        format_func=lambda o: repr(o),
     )
 
 
@@ -153,7 +136,12 @@ def model_selectbox(
     return obj_selectbox(client, label, object_types=["Model"], sort_key=sort_key)
 
 
-selectors = {
+P = ParamSpec("P")
+R = TypeVar("R", bound=Optional[Union[query.Op, query.Obj]])
+
+SelectorFunc = Callable[P, R]
+
+selectors: Dict[BoxSelector, SelectorFunc] = {
     BoxSelector.OP: op_selectbox,
     BoxSelector.DATASET: dataset_selectbox,
     BoxSelector.MODEL: model_selectbox,
