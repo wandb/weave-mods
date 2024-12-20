@@ -20,7 +20,13 @@ from urllib.parse import urlparse
 import toml
 import typer
 
-app = typer.Typer()
+app = typer.Typer(no_args_is_help=True)
+
+
+def ensure_dev():
+    if len(sys.argv) > 1:
+        if os.path.exists(sys.argv[1]):
+            return sys.argv.insert(1, "dev")
 
 
 class VersionPart(str, Enum):
@@ -139,7 +145,7 @@ def bump(
             sys.exit(1)
 
 
-@app.callback(invoke_without_command=True)
+@app.command()
 def dev(directory: Annotated[str, typer.Argument()] = "."):
     """Start mod using docker in dev mode."""
     if directory.startswith("pkg:"):
@@ -268,8 +274,10 @@ def dev(directory: Annotated[str, typer.Argument()] = "."):
 
 
 @app.command()
-def create(directory: str):
+def create(directory: Annotated[str, typer.Argument()] = "."):
     """Create a new mod."""
+    if "mods/" not in directory:
+        directory = os.path.join("mods", directory)
     # Check if directory exists, if not, create it
     if not os.path.exists(directory):
         os.makedirs(directory)
@@ -337,4 +345,5 @@ st.title("Welcome to Weave Mods!")
 
 
 if __name__ == "__main__":
+    ensure_dev()
     app()
