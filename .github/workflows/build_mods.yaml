@@ -141,6 +141,7 @@ jobs:
           echo "labels=$(jq -c '.labels' build_output.json)" >> $GITHUB_OUTPUT
           echo "name=$(jq -r '.tags[0]' build_output.json | sed 's/:[^:]*$//')" >> $GITHUB_OUTPUT
           echo "dir=$(echo ${{ matrix.directory }} | sed 's/\//-/g')" >> $GITHUB_OUTPUT
+          echo "platform=$(echo ${{ matrix.platform }} | sed 's/\//-/g')" >> $GITHUB_OUTPUT
 
       - name: Python Build Cache for Docker
         uses: actions/cache@v4
@@ -176,7 +177,7 @@ jobs:
       - name: Upload digest
         uses: actions/upload-artifact@v4
         with:
-          name: digests-${{ steps.context.outputs.dir }}-${{ matrix.platform }}
+          name: digests-${{ steps.context.outputs.dir }}-${{ steps.context.outputs.platform }}
           path: /tmp/digests/*
           if-no-files-found: error
           retention-days: 1
