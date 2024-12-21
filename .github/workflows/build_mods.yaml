@@ -140,6 +140,7 @@ jobs:
           echo "tags=$(jq -r '.tags | join(",")' build_output.json)" >> $GITHUB_OUTPUT
           echo "labels=$(jq -c '.labels' build_output.json)" >> $GITHUB_OUTPUT
           echo "name=$(jq -r '.tags[0]' build_output.json | sed 's/:[^:]*$//')" >> $GITHUB_OUTPUT
+          echo "dir=$(echo ${{ matrix.directory }} | sed 's/\//-/g')" >> $GITHUB_OUTPUT
 
       - name: Python Build Cache for Docker
         uses: actions/cache@v4
@@ -175,10 +176,14 @@ jobs:
       - name: Upload digest
         uses: actions/upload-artifact@v4
         with:
-          name: digests-${{ matrix.directory | replace('/', '-') }}-${{ matrix.platform }}
+          name: digests-${{ steps.context.outputs.dir }}-${{ matrix.platform }}
           path: /tmp/digests/*
           if-no-files-found: error
           retention-days: 1
+    outputs:
+      dir: ${{ steps.context.outputs.dir }}
+      name: ${{ steps.context.outputs.name }}
+      tags: ${{ steps.context.outputs.tags }}
 
   merge:
     needs: [discover, build]
@@ -191,15 +196,15 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: /tmp/digests
-          pattern: digests-${{ matrix.directory | replace('/', '-') }}-*
+          pattern: digests-${{ needs.build.outputs.dir }}-*
           merge-multiple: true
 
       - name: Create manifest list and push
         working-directory: /tmp/digests
         run: |
-          docker buildx imagetools create $(echo "${{ steps.context.outputs.tags }}" | tr ',' ' ' | sed 's/^/-t /') \
-            $(printf '${{ steps.context.outputs.image }}@sha256:%s ' *)
+          docker buildx imagetools create $(echo "${{ needs.build.outputs.tags }}" | tr ',' ' ' | sed 's/^/-t /') \
+            $(printf '${{ needs.build.outputs.name }}@sha256:%s ' *)
 
       - name: Inspect image
         run: |
-          docker buildx imagetools inspect ${{ steps.context.outputs.image }}
+          docker buildx imagetools inspect ${{ needs.build.outputs.image }}
