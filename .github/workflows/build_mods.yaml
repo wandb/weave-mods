@@ -200,6 +200,25 @@ jobs:
           pattern: digests-${{ needs.build.outputs.dir }}-*
           merge-multiple: true
 
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Authenticate to GCP
+        if: ${{ steps.registry.outputs.idpool != '' }}
+        uses: google-github-actions/auth@v1
+        with:
+          workload_identity_provider: ${{ steps.registry.outputs.idpool }}
+          service_account: ${{ steps.registry.outputs.sa }}
+
+      - name: Configure Docker for Artifact Registry
+        if: ${{ steps.registry.outputs.idpool != '' }}
+        run: |
+          gcloud auth configure-docker us-central1-docker.pkg.dev
+
       - name: Create manifest list and push
         working-directory: /tmp/digests
         run: |
