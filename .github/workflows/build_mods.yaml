@@ -71,14 +71,20 @@ jobs:
     outputs:
       changed_dirs: ${{ steps.changed.outputs.changed_dirs }}
 
-  build-and-push:
+  build:
     needs: discover
     if: ${{ needs.discover.outputs.changed_dirs != '[]' }}
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
       matrix:
         directory: ${{ fromJson(needs.discover.outputs.changed_dirs) }}
+        platform: [linux/amd64, linux/arm64]
+        include:
+          - platform: linux/amd64
+            runner: ubuntu-latest-8-cores
+          - platform: linux/arm64
+            runner: ubuntu-latest-arm64-4
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
@@ -147,13 +153,52 @@ jobs:
         with:
           cache-source: python-build-cache
 
-      - name: Docker Buildx (Build & Push)
+      - name: Build and push by digest
+        id: build
         uses: docker/build-push-action@v4
         with:
           context: ${{ matrix.directory }}
-          platforms: linux/amd64,linux/arm64
+          platforms: ${{ matrix.platform }}
           push: true
-          tags: ${{ steps.context.outputs.tags }}
           labels: ${{ steps.context.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=min
+          outputs: type=image,name=${{ steps.context.outputs.image }},push-by-digest=true,name-canonical=true,push=true
+
+      - name: Export digest
+        run: |
+          mkdir -p /tmp/digests
+          digest="${{ steps.build.outputs.digest }}"
+          touch "/tmp/digests/${digest#sha256:}"
+
+      - name: Upload digest
+        uses: actions/upload-artifact@v4
+        with:
+          name: digests-${{ matrix.directory }}-${{ matrix.platform }}
+          path: /tmp/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  merge:
+    needs: [discover, build]
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        directory: ${{ fromJson(needs.discover.outputs.changed_dirs) }}
+    steps:
+      - name: Download digests
+        uses: actions/download-artifact@v4
+        with:
+          path: /tmp/digests
+          pattern: digests-${{ matrix.directory }}-*
+          merge-multiple: true
+
+      - name: Create manifest list and push
+        working-directory: /tmp/digests
+        run: |
+          docker buildx imagetools create $(echo "${{ steps.context.outputs.tags }}" | tr ',' ' ' | sed 's/^/-t /') \
+            $(printf '${{ steps.context.outputs.image }}@sha256:%s ' *)
+
+      - name: Inspect image
+        run: |
+          docker buildx imagetools inspect ${{ steps.context.outputs.image }}
