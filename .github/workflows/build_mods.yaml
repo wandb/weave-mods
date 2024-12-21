@@ -139,6 +139,7 @@ jobs:
           echo "image=$(cat build_output.json)" >> $GITHUB_OUTPUT
           echo "tags=$(jq -r '.tags | join(",")' build_output.json)" >> $GITHUB_OUTPUT
           echo "labels=$(jq -c '.labels' build_output.json)" >> $GITHUB_OUTPUT
+          echo "name=$(jq -r '.tags[0]' build_output.json | sed 's/:[^:]*$//')" >> $GITHUB_OUTPUT
 
       - name: Python Build Cache for Docker
         uses: actions/cache@v4
@@ -163,7 +164,7 @@ jobs:
           labels: ${{ steps.context.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=min
-          outputs: type=image,name=${{ steps.context.outputs.image }},push-by-digest=true,name-canonical=true,push=true
+          outputs: type=image,name=${{ steps.context.outputs.name }},push-by-digest=true,name-canonical=true,push=true
 
       - name: Export digest
         run: |
