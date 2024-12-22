@@ -246,6 +246,7 @@ def get_calls(
     input_refs=None,
     limit: int | None = None,
     cache_key=None,
+    callback: Optional[Callable[[int], None]] = None,
 ):
     if isinstance(op_name, list):
         if all(type(op_name).__name__ == "Op" for o in op_name):
@@ -274,7 +275,7 @@ def get_calls(
             "summary": c.summary,
             "ended_at": c.ended_at,
         }
-        for c in weave_client_calls(_client, op_names, input_refs, limit)
+        for c in weave_client_calls(_client, op_names, input_refs, limit, callback)
     ]
     df = pd.json_normalize(call_list)
 

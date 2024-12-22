@@ -51,7 +51,6 @@ def safe_df(df: pd.DataFrame):
     df = df.map(to_json_string)
 
     # Add links to the actual call
-    print("df_columns", df.columns)
     if "id" in df.columns:
         df["id"] = df["id"].map(id_to_url)
     return df

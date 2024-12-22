@@ -62,25 +62,42 @@ def get_calls(
     input_refs=None,
     cached=True,
 ) -> Calls:
+    def progress(status, offset: int = 0):
+        def _callback(calls_fetched: int):
+            status.update(
+                label=f"Fetching calls... ({calls_fetched + offset} calls fetched)"
+            )
+
+        return _callback
+
     if not cached:
-        return api_get_calls(client, op_name, input_refs)
+        with st.status("Fetching calls...") as status:
+            return api_get_calls(client, op_name, input_refs, callback=progress(status))
 
-    @st.cache_data(hash_funcs=ST_HASH_FUNCS)
-    def _cached_get_calls(client, op_name, input_refs):
-        return api_get_calls(client, op_name, input_refs)
+    @st.cache_data(persist="disk", hash_funcs=ST_HASH_FUNCS)
+    def cached_get_calls(client, op_name, input_refs, _progress):
+        return api_get_calls(client, op_name, input_refs, callback=_progress)
 
-    if not isinstance(op_name, list):
-        return _cached_get_calls(client, op_name, input_refs)
+    status_container = st.empty()
+    with status_container.status("Fetching calls...") as status:
+        if not isinstance(op_name, list):
+            calls = cached_get_calls(client, op_name, input_refs, progress(status))
+            status.update(state="complete")
+            status_container.empty()
+            return calls
 
-    df = pd.DataFrame()
-    for op in op_name:
-        result = _cached_get_calls(client, op, input_refs)
-        result.df = result.df.dropna(subset=["id"])
+        df = pd.DataFrame()
+        offset = 0
+        for op in op_name:
+            result = cached_get_calls(client, op, input_refs, progress(status, offset))
+            result.df = result.df.dropna(subset=["id"])
+            offset += result.df.shape[0]
 
-        if df.empty:
-            df = result.df.copy()
-        else:
-            df = pd.concat([df, result.df], ignore_index=True)
+            if df.empty:
+                df = result.df.copy()
+            else:
+                df = pd.concat([df, result.df], ignore_index=True)
+    status_container.empty()
     df = df.set_index("id", drop=False)
     return Calls(df)
 

@@ -3,7 +3,7 @@
 
 import dataclasses
 import datetime
-from typing import Any, Iterator, List, Optional, Sequence, Union, cast
+from typing import Any, Callable, Iterator, List, Optional, Sequence, Union, cast
 
 from weave.trace import urls, weave_client
 from weave.trace.weave_client import WeaveClient, from_json
@@ -97,6 +97,7 @@ class CallsIter:
     filter: CallsFilter
     _column: str
     _limit: int
+    _callback: Optional[Callable[[int], None]] = None
 
     def __init__(
         self,
@@ -105,6 +106,7 @@ class CallsIter:
         filter: CallsFilter,
         columns: List[str] | None = None,
         limit: int | None = None,
+        callback: Optional[Callable[[int], None]] = None,
     ) -> None:
         self.server = server
         self.project_id = project_id
@@ -112,6 +114,7 @@ class CallsIter:
         self._columns = columns
         # TODO: Probably make this bigger
         self._limit = limit or 10_000
+        self._callback = callback
 
     def __getitem__(self, key: Union[slice, int]) -> Call:
         if isinstance(key, slice):
@@ -123,8 +126,9 @@ class CallsIter:
 
     def __iter__(self) -> Iterator[Call]:
         page_index = 0
-        page_size = 500
+        page_size = 200
         entity, project = self.project_id.split("/")
+        total_calls = 0
         while True:
             response = self.server.calls_query(
                 CallsQueryReq(
@@ -136,6 +140,9 @@ class CallsIter:
                 )
             )
             page_data = response.calls
+            total_calls += len(page_data)
+            if self._callback:
+                self._callback(total_calls)
             for call in page_data:
                 # TODO: if we want to be able to refer to call outputs
                 # we need to yield a ref-tracking call here.
@@ -152,7 +159,11 @@ class CallsIter:
 
 
 def weave_client_calls(
-    self: WeaveClient, op_names, input_refs=None, limit: int | None = None
+    self: WeaveClient,
+    op_names,
+    input_refs=None,
+    limit: int | None = None,
+    callback: Optional[Callable[[int], None]] = None,
 ) -> CallsIter:
     trace_server_filt = CallsFilter()
     if op_names:
@@ -169,7 +180,13 @@ def weave_client_calls(
         trace_server_filt.op_names = op_ref_uris
     if input_refs:
         trace_server_filt.input_refs = input_refs
-    return CallsIter(self.server, self._project_id(), trace_server_filt, limit=limit)
+    return CallsIter(
+        self.server,
+        self._project_id(),
+        trace_server_filt,
+        limit=limit,
+        callback=callback,
+    )
 
 
 def weave_client_ops(

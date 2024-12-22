@@ -100,9 +100,9 @@ st.title("LLM Trace Data Anomalyzer")
 
 with st.sidebar:
     st.title("Choose an op to anomalyze")
-    op = mods.st.selectbox("Ops", selector=mods.st.OP)
+    op = mods.st.selectbox("Ops", mods.st.OP)
     if op:
-        selected_ops = mods.st.multiselect("Versions", op=op)
+        selected_ops = mods.st.multiselect("Versions", op)
 
 if op:
     client = mods.st.current_client()

@@ -250,7 +250,8 @@ def dev(directory: Annotated[str, typer.Argument()] = "."):
     # Run the command and open the browser on success
     process = subprocess.Popen(docker_command)
     try:
-        for _ in range(10):
+        typer.secho("Waiting for container to be healthy", fg=typer.colors.YELLOW)
+        for _ in range(60):
             health_check = subprocess.run(
                 [
                     "docker",
@@ -263,8 +264,16 @@ def dev(directory: Annotated[str, typer.Argument()] = "."):
                 text=True,
             )
             if health_check.stdout.strip() == "healthy":
+                typer.secho("Container is healthy", fg=typer.colors.GREEN)
                 break
-            print(health_check.stdout)
+            if health_check.stdout.strip() == "unhealthy":
+                typer.secho(
+                    f"Container is unhealthy: {health_check.stdout.strip()}",
+                    fg=typer.colors.RED,
+                )
+                sys.exit(1)
+            else:
+                print(".", end="", flush=True)
             time.sleep(1)
         if process.poll() is None:
             webbrowser.open(f"http://localhost:{port}")

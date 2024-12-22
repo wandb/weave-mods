@@ -63,9 +63,9 @@ def multiselect(
         options = get_objects(client, "Model", cached=False)
         kwargs["placeholder"] = "Select Models..."
 
-    if type(options) is query.Op:
+    if type(options).__name__ == "Op":
         return version_multiselect(client, label, options, default)
-    elif type(options) is query.Calls:
+    elif type(options).__name__ == "Calls":
         return calls_column_multiselect(label, options, op_types, sort_key, default)
     elif isinstance(options, list):
         if options and all(type(x) is query.Obj for x in options):
