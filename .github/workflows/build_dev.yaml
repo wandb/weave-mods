@@ -13,7 +13,6 @@ on:
 
 jobs:
   build-and-push:
-    needs: discover
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
