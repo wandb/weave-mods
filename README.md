@@ -10,13 +10,13 @@ A way to customize and enhance your GenAI dashboards.
 - [docker](https://docker.com/products/docker-desktop)
 
 ```bash
-make build-dev
+./dev.py setup
 ```
 
 ### Run a mod locally in dev mode
 
 ```bash
-./dev.py mods/welcome
+./dev.py mods/demo
 ```
 
 > NOTE: ensure you're logged into wandb and you'll likely want to set the WANDB_PROJECT env var to a project with existing weave trace data.

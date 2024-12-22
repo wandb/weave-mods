@@ -1,4 +1,14 @@
 repos:
+  - repo: local
+    hooks:
+      - id: generate_manifest
+        name: generate mod manifest
+        entry: generate_manifest.sh
+        language: script
+        pass_filenames: false
+        always_run: true
+        stages: [commit]
+
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
     hooks:

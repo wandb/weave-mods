@@ -289,6 +289,29 @@ def dev(directory: Annotated[str, typer.Argument()] = "."):
 
 
 @app.command()
+def setup():
+    """Setup your system for developing mods."""
+    subprocess.run(
+        ["uv", "sync"], cwd=os.path.join(Path(__file__).parent, "sdk"), check=True
+    )
+    subprocess.run(
+        ["uv", "run", "pre-commit", "install"],
+        cwd=os.path.join(Path(__file__).parent, "mods"),
+        check=True,
+    )
+    repo_venv = os.path.join(Path(__file__).parent, ".venv")
+    sdk_venv = os.path.join(Path(__file__).parent, "sdk", ".venv")
+    if not os.path.exists(repo_venv):
+        os.symlink(sdk_venv, repo_venv, target_is_directory=True)
+    typer.secho("Setup complete", fg=typer.colors.GREEN)
+    typer.secho(
+        """You can now run `./dev.py mods/demo` to start the dev server for an existing mod
+or `./dev.py create mods/my-rad-mod` to create your own.""",
+        fg=typer.colors.BLUE,
+    )
+
+
+@app.command()
 def create(directory: Annotated[str, typer.Argument()] = "."):
     """Create a new mod."""
     if "mods/" not in directory:
@@ -327,10 +350,6 @@ st.title("Welcome to Weave Mods!")
 """)
     with open(os.path.join(directory, ".gitignore"), "w") as f:
         f.write("__pycache__\n.venv\n")
-    with open(os.path.join(directory, "README.md"), "w") as f:
-        f.write(
-            f"# {os.path.basename(directory).upper()} mod\n\nAdd more description here..."
-        )
     # Configure vscode to know about our new virtual environment
     os.makedirs(os.path.join(directory, ".vscode"))
     with open(os.path.join(directory, ".vscode", "settings.json"), "w") as f:
@@ -357,6 +376,10 @@ st.title("Welcome to Weave Mods!")
     except Exception as e:
         typer.secho(f"Error reading pyproject.toml: {e}", fg=typer.colors.RED)
         sys.exit(1)
+    description = typer.prompt("Enter a brief description of the mod")
+    pyproject["project"]["description"] = description
+    with open(os.path.join(directory, "README.md"), "w") as f:
+        f.write(f"# {os.path.basename(directory).capitalize()} mod\n\n{description}")
     # Add [tool.weave.mod] section
     tool = pyproject.get("tool", {})
     weave_config = tool.get("weave", {"mod": {}})

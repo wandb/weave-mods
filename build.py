@@ -29,8 +29,10 @@ if env == "production" or env == "prod":
     REGISTRY = "us-central1-docker.pkg.dev/wandb-production/mods"
 elif env == "qa":
     REGISTRY = "us-central1-docker.pkg.dev/wandb-qa/mods"
-else:
+elif env == "dev":
     REGISTRY = "localhost:5001/mods"
+else:
+    REGISTRY = "ghcr.io/wandb/weave-mods"
 
 REGISTRY = os.getenv("REGISTRY", REGISTRY)
 
@@ -127,8 +129,13 @@ def build(
     ),
     build: Optional[bool] = typer.Option(
         None,
-        "--build",
+        "--build/--no-build",
         help="Actually build the images, defaults to true when REGISTRY is localhost",
+    ),
+    manifest: Optional[bool] = typer.Option(
+        False,
+        "--manifest",
+        help="Generate a manifest of the built images",
     ),
     upgrade: bool = typer.Option(
         False, "--upgrade", help="Upgrade dependencies before building"
@@ -160,8 +167,8 @@ def build(
                 style="yellow",
             )
             continue
-
-        log.print(f"Processing directory: {dir_path}", style="green")
+        if not manifest:
+            log.print(f"Processing directory: {dir_path}", style="green")
         dockerfile_path = dir_path / "Dockerfile"
         dockerignore_path = dir_path / ".dockerignore"
         healthcheck_path = dir_path / "healthcheck.py"
@@ -252,11 +259,21 @@ def build(
                 dockerignore_path.unlink(missing_ok=True)
                 dockerfile_path.unlink(missing_ok=True)
     log.print(
-        f"{'Built' if build else 'Discovered'} {len(mod_configs)} mods",
+        f"{'Built' if build else 'Wrote'} {len(mod_configs)} mods {'to the manifest' if manifest else ''}",
         style="green",
     )
-    if build:
-        json.dump([item.model_dump() for item in mod_configs], sys.stdout, indent=4)
+    if manifest:
+        if len(mod_configs) == 1:
+            typer.secho(
+                "Manifest can not be updated for a single mod.", fg=typer.colors.RED
+            )
+        with open("manifest.json", "w") as f:
+            json.dump(
+                {mc.name: mc.model_dump() for mc in mod_configs},
+                f,
+                indent=4,
+            )
+            f.write("\n")
     else:
         if len(build_configs) == 1:
             json.dump(build_configs[0].model_dump(), sys.stdout)
