@@ -1,0 +1,16 @@
+{
+    "folders": [
+        {
+            "path": ".."
+        },
+        {
+            "path": "../sdk"
+        },
+        {
+            "path": "../mods/demo"
+        }
+    ],
+    "settings": {
+        "python.defaultInterpreterPath": "../sdk/.venv/bin/python"
+    }
+}

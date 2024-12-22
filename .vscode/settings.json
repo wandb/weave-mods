@@ -1,7 +1,7 @@
 {
   "files.insertFinalNewline": true,
   "files.trimTrailingWhitespace": true,
-  "python.defaultInterpreterPath": "mods/embedding-classifier/.venv/bin/python",
+  "python.defaultInterpreterPath": "sdk/.venv/bin/python",
   "[dockercompose]": {
     "editor.autoIndent": "advanced",
     "editor.defaultFormatter": "redhat.vscode-yaml",

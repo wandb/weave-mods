@@ -63,12 +63,12 @@ def multiselect(
         options = get_objects(client, "Model", cached=False)
         kwargs["placeholder"] = "Select Models..."
 
-    if isinstance(options, query.Op):
+    if type(options) is query.Op:
         return version_multiselect(client, label, options, default)
-    elif isinstance(options, query.Calls):
+    elif type(options) is query.Calls:
         return calls_column_multiselect(label, options, op_types, sort_key, default)
     elif isinstance(options, list):
-        if options and all(isinstance(x, query.Obj) for x in options):
+        if options and all(type(x) is query.Obj for x in options):
             return objs_multiselect(label, options, *args, sort_key, default, **kwargs)
         return st.multiselect(label, options, *args, default=default, **kwargs)
 
@@ -83,12 +83,12 @@ def version_multiselect(
 ) -> List[query.Op]:
     versions = query.get_op_versions(client, op)
     if default is None:
-
-        def default(x):
-            return [versions[0]]
+        default_val = [versions[0]]
+    else:
+        default_val = default([repr(v) for v in versions])
 
     return st.multiselect(
-        label, versions, default=default, format_func=lambda x: repr(x)
+        label, versions, default=default_val, format_func=lambda x: repr(x)
     )
 
 
@@ -100,10 +100,13 @@ def calls_column_multiselect(
     default: Optional[Callable[[Sequence[str]], Any]] = None,
 ) -> List[query.Column]:
     ordered_compare_cols = calls.columns(op_types=op_types, sort_key=sort_key)
+    default_val = None
+    if default is not None:
+        default_val = default([col.name for col in ordered_compare_cols])
     return st.multiselect(
         label,
         ordered_compare_cols,
-        default=default,
+        default=default_val,
         format_func=lambda col: col.name,
     )
 
@@ -117,11 +120,14 @@ def objs_multiselect(
 ) -> List[query.Obj]:
     if sort_key:
         objs = sorted(objs, key=sort_key)
+    default_val = None
+    if default is not None:
+        default_val = default([repr(o) for o in objs])
 
     return st.multiselect(
         label,
         objs,
-        default=default,
+        default=default_val,
         format_func=lambda o: repr(o),
         **kwargs,
     )

@@ -7,6 +7,7 @@
 # ]
 # ///
 
+import json
 import os
 import subprocess
 import sys
@@ -161,6 +162,11 @@ def dev(directory: Annotated[str, typer.Argument()] = "."):
                 fg=typer.colors.YELLOW,
             )
             sys.exit(1)
+        try:
+            subprocess.run(["uv", "sync"], cwd=directory, check=True)
+        except subprocess.CalledProcessError as e:
+            typer.secho(f"Error running 'uv sync': {e}", fg=typer.colors.RED)
+            sys.exit(1)
         # Parse pyproject.toml
         try:
             with open(pyproject_path, "r") as f:
@@ -284,7 +290,7 @@ def create(directory: Annotated[str, typer.Argument()] = "."):
         typer.secho(f"Created directory: {directory}", fg=typer.colors.GREEN)
     else:
         typer.secho(f"Directory already exists: {directory}", fg=typer.colors.YELLOW)
-    # Run 'uv init' in the directory
+    # Setup a streamlit mod by default, TODO: extend this to other flavors
     try:
         subprocess.run(["uv", "init"], cwd=directory, check=True)
         typer.secho(f"Ran 'uv init' in {directory}", fg=typer.colors.GREEN)
@@ -293,6 +299,12 @@ def create(directory: Annotated[str, typer.Argument()] = "."):
         sys.exit(1)
     try:
         subprocess.run(["uv", "add", "streamlit"], cwd=directory, check=True)
+        # add sdk as a dev editable dependency to make dev easier for now
+        subprocess.run(
+            ["uv", "add", "--dev", "--editable", "../../sdk/"],
+            cwd=directory,
+            check=True,
+        )
     except subprocess.CalledProcessError as e:
         typer.secho(
             f"Failed to run 'uv add streamlit' in {directory}: {e}", fg=typer.colors.RED
@@ -310,6 +322,18 @@ st.title("Welcome to Weave Mods!")
         f.write(
             f"# {os.path.basename(directory).upper()} mod\n\nAdd more description here..."
         )
+    # Configure vscode to know about our new virtual environment
+    os.makedirs(os.path.join(directory, ".vscode"))
+    with open(os.path.join(directory, ".vscode", "settings.json"), "w") as f:
+        f.write('{"python.defaultInterpreterPath": ".venv/bin/python"}')
+    workspace_path = os.path.join(
+        Path(__file__).parent, ".vscode", "weave-mods.code-workspace"
+    )
+    with open(workspace_path, "r") as f:
+        workspace = json.load(f)
+    workspace["folders"].append({"path": os.path.join("..", directory)})
+    with open(workspace_path, "w") as f:
+        json.dump(workspace, f, indent=4)
     # Modify pyproject.toml to add [tool.weave] section with flavor = "streamlit"
     pyproject_path = os.path.join(directory, "pyproject.toml")
     if not os.path.exists(pyproject_path):

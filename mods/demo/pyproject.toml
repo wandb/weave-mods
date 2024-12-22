@@ -8,3 +8,11 @@ dependencies = ["streamlit>=1.40.0"]
 
 [tool.weave.mod]
 flavor = "streamlit"
+
+[tool.uv.sources]
+mods = { path = "../../sdk", editable = true }
+
+[dependency-groups]
+dev = [
+    "mods",
+]

@@ -11,19 +11,22 @@ logger.addHandler(logging.StreamHandler())
 
 st.set_page_config(layout="wide")
 st.title("Welcome to Weave Mods!")
+st.write("This is a demo app to show examples of using the Weave Mods SDK.")
 
 with st.sidebar:
     st.title("Example mod helpers")
-    op = mods.st.op_selectbox("Ops")
+    op = mods.st.selectbox("Ops", mods.st.OP)
     if op:
-        st.write(f"Op Name: {op.name}")
-    ds = mods.st.dataset_selectbox("Datasets")
+        v = mods.st.multiselect("Versions", op)
+    ds = mods.st.multiselect("Datasets", mods.st.DATASET)
     if ds:
-        st.write(f"Dataset: {ds.name}")
+        st.write(f"Datasets: {[d.name for d in ds]}")
 
 if op:
-    st.write(f"Calls table for: {op.name}")
-    calls, selected = mods.st.calls_table(op.ref().uri())
+    st.write("Select a row to see the chat thread")
+    calls, selected = mods.st.tracetable([v.ref().uri() for v in v])
     if selected:
         call = calls.df.iloc[selected]
-        mods.st.call_chat_thread(call)
+        mods.st.chat_thread(call)
+else:
+    st.write("*Select an op to see traces*")
