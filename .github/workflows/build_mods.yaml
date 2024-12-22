@@ -208,7 +208,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Authenticate to GCP
-        if: ${{ steps.registry.outputs.idpool != '' }}
+        if: ${{ needs.build.outputs.idpool != '' }}
         uses: google-github-actions/auth@v1
         with:
           workload_identity_provider: ${{ needs.build.outputs.idpool }}
