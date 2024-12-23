@@ -7,3 +7,4 @@ mods/**/.dockerignore
 mods/**/Dockerfile
 mods/**/healthcheck.py
 !mods/healthcheck.py
+build_output.json

@@ -246,7 +246,7 @@ def build(
                 tags = [t for t in docker_tags if t != "-t"]
                 # Add our default registry to the tags if it's set
                 if os.getenv("DEFAULT_REGISTRY"):
-                    for tag in tags:
+                    for tag in tags.copy():
                         tag = tag.replace(REGISTRY, os.getenv("DEFAULT_REGISTRY"))
                         tags.append(tag)
                 build_configs.append(
