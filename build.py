@@ -243,11 +243,17 @@ def build(
                 log.print(f"Built image: {docker_tags[1]}", style="green")
             else:
                 log.print(f"Discovered image: {docker_tags[1]}", style="green")
+                tags = [t for t in docker_tags if t != "-t"]
+                # Add our default registry to the tags if it's set
+                if os.getenv("DEFAULT_REGISTRY"):
+                    for tag in tags:
+                        tag = tag.replace(REGISTRY, os.getenv("DEFAULT_REGISTRY"))
+                        tags.append(tag)
                 build_configs.append(
                     DockerConfig(
                         directory=str(dir_path),
                         dockerfile=dockerfile_path.name,
-                        tags=[t for t in docker_tags if t != "-t"],
+                        tags=tags,
                         labels=labels,
                     )
                 )

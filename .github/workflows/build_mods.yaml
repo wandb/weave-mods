@@ -96,10 +96,12 @@ jobs:
             echo "registry=us-central1-docker.pkg.dev/wandb-qa/mods" >> $GITHUB_OUTPUT
             echo "idpool=projects/281760294016/locations/global/workloadIdentityPools/weave-mods-pool/providers/github" >> $GITHUB_OUTPUT
             echo "sa=weave-mods-builder@wandb-qa.iam.gserviceaccount.com" >> $GITHUB_OUTPUT
+            echo "default_registry=ghcr.io/wandb/weave-mods" >> $GITHUB_OUTPUT
           else
             echo "registry=ghcr.io/wandb/weave-mods" >> $GITHUB_OUTPUT
             echo "idpool=" >> $GITHUB_OUTPUT
             echo "sa=" >> $GITHUB_OUTPUT
+            echo "default_registry=" >> $GITHUB_OUTPUT
           fi
 
       - name: Set up Docker Buildx
@@ -131,6 +133,7 @@ jobs:
         id: context
         env:
           REGISTRY: ${{ steps.registry.outputs.registry }}
+          DEFAULT_REGISTRY: ${{ steps.registry.outputs.default_registry }}
         run: |
           uv run build.py --root "${{ matrix.directory }}" > build_output.json
           echo "image=$(cat build_output.json)" >> $GITHUB_OUTPUT
