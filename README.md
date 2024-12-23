@@ -9,6 +9,8 @@ A way to customize and enhance your GenAI dashboards.
 - [uv](https://docs.astral.sh/uv)
 - [docker](https://docker.com/products/docker-desktop)
 
+Once installed, run the following to install pre-commit hooks and pull the latest dev image:
+
 ```bash
 ./dev.py setup
 ```
