@@ -1,14 +1,10 @@
 [project]
 name = "together-ft"
 version = "0.1.0"
-description = "Finetune a model with together"
+description = "Finetune a model with together AI"
 readme = "README.md"
 requires-python = ">=3.12"
-dependencies = [
- "openai>=1.55.3",
- "streamlit>=1.40.2",
- "together>=1.3.5",
-]
+dependencies = ["openai>=1.55.3", "streamlit>=1.40.2", "together>=1.3.5"]
 
 [tool.weave.mod]
 flavor = "streamlit"
@@ -20,6 +16,4 @@ secrets = ["TOGETHER_API_KEY", "WANDB_API_KEY", "OPENAI_API_KEY"]
 mods = { path = "../../sdk", editable = true }
 
 [dependency-groups]
-dev = [
-    "mods",
-]
+dev = ["mods"]

@@ -20,6 +20,9 @@ from urllib.parse import urlparse
 
 import toml
 import typer
+from rich.console import Console
+from rich.panel import Panel
+from rich.text import Text
 
 app = typer.Typer(no_args_is_help=True)
 
@@ -62,6 +65,66 @@ def host_and_key() -> tuple[str, str | None]:
                     break
 
     return host, key
+
+
+def print_setup_info(console, host: str, key: str):
+    # Build your auth status string with color markup
+    auth_status = (
+        "[green]✅ logged in[/green]"
+        if key
+        else "[red]❌ not logged in[/red] (run `wandb login` to fix)"
+    )
+
+    panel_content = f"""
+[bold underline]System Configuration[/bold underline]
+  Weave Server: [yellow]{host}[/yellow] - {auth_status}
+
+[bold underline]Next Steps[/bold underline]
+ 1) [bold magenta]./dev.py mods/demo[/bold magenta]
+    to start the dev server for an existing mod
+
+ 2) [bold magenta]./dev.py create mods/my-rad-mod[/bold magenta]
+    to create your own rad mod 😎
+"""
+    body = Text.from_markup(panel_content)
+
+    # Wrap everything in a Panel
+    panel = Panel(
+        body,
+        title="⚡ Weave Mods Setup Complete ⚡",
+        title_align="left",  # Align the panel title to the left
+        border_style="green",
+        expand=True,  # Let the panel grow to fit content
+    )
+
+    console.print(panel)
+
+
+@app.command()
+def setup():
+    """Setup your system for developing mods."""
+    console = Console(stderr=True)
+    console.print("Syncing SDK...", style="blue")
+    subprocess.run(
+        ["uv", "sync"], cwd=os.path.join(Path(__file__).parent, "sdk"), check=True
+    )
+    console.print("Installing pre-commit hooks", style="blue")
+    subprocess.run(
+        ["uv", "run", "pre-commit", "install"],
+        cwd=os.path.join(Path(__file__).parent, "mods"),
+        check=True,
+    )
+    console.print("Pulling latest dev image", style="blue")
+    subprocess.run(
+        ["docker", "pull", "ghcr.io/wandb/weave-mods/dev"],
+        check=True,
+    )
+    repo_venv = os.path.join(Path(__file__).parent, ".venv")
+    sdk_venv = os.path.join(Path(__file__).parent, "sdk", ".venv")
+    if not os.path.exists(repo_venv):
+        os.symlink(sdk_venv, repo_venv, target_is_directory=True)
+    host, key = host_and_key()
+    print_setup_info(console, host, key)
 
 
 @app.command()
@@ -243,7 +306,7 @@ def dev(directory: Annotated[str, typer.Argument()] = "."):
         docker_command.extend(["-e", secret])
     for env in weave_config.get("env", {}).items():
         docker_command.extend(["-e", f"{env[0]}={env[1]}"])
-    docker_command.append("localhost:5001/mods/dev")
+    docker_command.append("ghcr.io/wandb/weave-mods/dev")
     # Display command
     typer.secho("Running docker command:", fg=typer.colors.GREEN)
     typer.secho(" ".join(docker_command), fg=typer.colors.BLUE)
@@ -327,10 +390,6 @@ st.title("Welcome to Weave Mods!")
 """)
     with open(os.path.join(directory, ".gitignore"), "w") as f:
         f.write("__pycache__\n.venv\n")
-    with open(os.path.join(directory, "README.md"), "w") as f:
-        f.write(
-            f"# {os.path.basename(directory).upper()} mod\n\nAdd more description here..."
-        )
     # Configure vscode to know about our new virtual environment
     os.makedirs(os.path.join(directory, ".vscode"))
     with open(os.path.join(directory, ".vscode", "settings.json"), "w") as f:
@@ -357,6 +416,10 @@ st.title("Welcome to Weave Mods!")
     except Exception as e:
         typer.secho(f"Error reading pyproject.toml: {e}", fg=typer.colors.RED)
         sys.exit(1)
+    description = typer.prompt("Enter a brief description of the mod")
+    pyproject["project"]["description"] = description
+    with open(os.path.join(directory, "README.md"), "w") as f:
+        f.write(f"# {os.path.basename(directory).capitalize()} mod\n\n{description}")
     # Add [tool.weave.mod] section
     tool = pyproject.get("tool", {})
     weave_config = tool.get("weave", {"mod": {}})

@@ -16,13 +16,18 @@ _check-gh-auth:
     fi
 
 # Build development image
-build-dev:
+docker-dev:
     docker build . -f Dockerfile.dev --tag {{registry}}/dev {{docker-flags}}
 
 docker-ghlogin token=`gh auth token` user=`gh api user -q .login`: _check-gh-auth
     echo {{token}} | docker login ghcr.io -u {{user}} --password-stdin
 
-build-mod directory ref=ref:
+gha-mod directory ref=ref:
     gh workflow run build_mods.yaml -f directory={{directory}} --ref={{ref}}
+    sleep 3
+    gh run watch
+
+gha-dev:
+    gh workflow run build_dev.yaml --ref={{ref}}
     sleep 3
     gh run watch

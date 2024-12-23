@@ -1,0 +1,141 @@
+{
+    "demo": {
+        "name": "demo",
+        "classifiers": [],
+        "entrypoint": [
+            "streamlit",
+            "run",
+            "/app/src/app.py",
+            "--server.port=6637",
+            "--server.address=0.0.0.0",
+            "--server.enableCORS=false",
+            "--server.enableXsrfProtection=false",
+            "--client.toolbarMode=minimal"
+        ],
+        "description": "A demo of using helpers from the weave mods sdk",
+        "version": "0.1.0",
+        "secrets": []
+    },
+    "playground": {
+        "name": "playground",
+        "classifiers": [],
+        "entrypoint": [
+            "open-webui",
+            "serve",
+            "--port",
+            "6637"
+        ],
+        "description": "A chat playground",
+        "version": "0.1.0",
+        "secrets": [
+            "OPENAI_API_KEY"
+        ]
+    },
+    "together-ft": {
+        "name": "together-ft",
+        "classifiers": [],
+        "entrypoint": [
+            "Overview.py"
+        ],
+        "description": "Finetune a model with together AI",
+        "version": "0.1.0",
+        "secrets": [
+            "TOGETHER_API_KEY",
+            "WANDB_API_KEY",
+            "OPENAI_API_KEY"
+        ]
+    },
+    "openui": {
+        "name": "openui",
+        "classifiers": [],
+        "entrypoint": [
+            "python",
+            "-m",
+            "openui",
+            "--litellm"
+        ],
+        "description": "OpenUI builds tailwindcss UI's for you",
+        "version": "0.1.0",
+        "secrets": [
+            "OPENAI_API_KEY",
+            "ANTHROPIC_API_KEY",
+            "WANDB_API_KEY"
+        ]
+    },
+    "dashboard": {
+        "name": "dashboard",
+        "classifiers": [],
+        "entrypoint": [
+            "streamlit",
+            "run",
+            "/app/src/Overview.py",
+            "--server.port=6637",
+            "--server.address=0.0.0.0",
+            "--server.enableCORS=false",
+            "--server.enableXsrfProtection=false",
+            "--client.toolbarMode=minimal"
+        ],
+        "description": "A dashboard for exploring your weave data",
+        "version": "0.1.0",
+        "secrets": [
+            "WANDB_API_KEY"
+        ]
+    },
+    "anamolyzer": {
+        "name": "anamolyzer",
+        "classifiers": [],
+        "entrypoint": [
+            "streamlit",
+            "run",
+            "/app/src/Overview.py",
+            "--server.port=6637",
+            "--server.address=0.0.0.0",
+            "--server.enableCORS=false",
+            "--server.enableXsrfProtection=false",
+            "--client.toolbarMode=minimal"
+        ],
+        "description": "A tool for detecting anomalies in weave trace data",
+        "version": "0.1.0",
+        "secrets": []
+    },
+    "embedding-classifier": {
+        "name": "embedding-classifier",
+        "classifiers": [],
+        "entrypoint": [
+            "streamlit",
+            "run",
+            "/app/src/Overview.py",
+            "--server.port=6637",
+            "--server.address=0.0.0.0",
+            "--server.enableCORS=false",
+            "--server.enableXsrfProtection=false",
+            "--client.toolbarMode=minimal"
+        ],
+        "description": "A tool to classify and cluster weave trace data",
+        "version": "0.1.0",
+        "secrets": [
+            "OPENAI_API_KEY",
+            "WANDB_API_KEY"
+        ]
+    },
+    "html": {
+        "name": "html",
+        "classifiers": [],
+        "entrypoint": [
+            "streamlit",
+            "run",
+            "/app/src/Overview.py",
+            "--server.port=6637",
+            "--server.address=0.0.0.0",
+            "--server.enableCORS=false",
+            "--server.enableXsrfProtection=false",
+            "--client.toolbarMode=minimal"
+        ],
+        "description": "A sick HTML labeling tool",
+        "version": "0.1.0",
+        "secrets": [
+            "WANDB_API_KEY",
+            "OPENAI_API_KEY"
+        ]
+    }
+}

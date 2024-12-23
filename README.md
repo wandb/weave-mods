@@ -9,14 +9,16 @@ A way to customize and enhance your GenAI dashboards.
 - [uv](https://docs.astral.sh/uv)
 - [docker](https://docker.com/products/docker-desktop)
 
+Once installed, run the following to install pre-commit hooks and pull the latest dev image:
+
 ```bash
-make build-dev
+./dev.py setup
 ```
 
 ### Run a mod locally in dev mode
 
 ```bash
-./dev.py mods/welcome
+./dev.py mods/demo
 ```
 
 > NOTE: ensure you're logged into wandb and you'll likely want to set the WANDB_PROJECT env var to a project with existing weave trace data.

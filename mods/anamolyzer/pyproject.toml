@@ -1,7 +1,7 @@
 [project]
 name = "anamolyzer"
 version = "0.1.0"
-description = "Add your description here"
+description = "A tool for detecting anomalies in weave trace data"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
