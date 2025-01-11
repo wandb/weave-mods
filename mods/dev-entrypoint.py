@@ -1,5 +1,4 @@
 import asyncio
-import json
 import os
 import re
 import shutil
@@ -270,8 +269,16 @@ async def main():
     else:
         raise ValueError(f"Unsupported flavor: {flavor}")
     print(f"Running {flavor} app from {os.getcwd()}: {" ".join(args)}")
-    with open("/tmp/mod-ready", "w") as f:
-        f.write(f"ready: {json.dumps(args)}")
+    # Start healthcheck.py in the background
+    health_log = open("/mods/health.log", "w")
+    await asyncio.create_subprocess_exec(
+        "uv",
+        "run",
+        "--no-project",
+        "/mods/healthcheck.py",
+        stdout=health_log,
+        stderr=health_log,
+    )
     os.execvp("uv", args)
 
 
