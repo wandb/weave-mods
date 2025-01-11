@@ -24,11 +24,11 @@ jobs:
         run: |
           if [ "${{ github.ref_name }}" = "main" ]; then
             echo "image=us-central1-docker.pkg.dev/wandb-production/mods/dev" >> $GITHUB_OUTPUT
-            echo "idpool=projects/wandb-production/locations/global/workloadIdentityPools/weave-mods-pool/providers/github" >> $GITHUB_OUTPUT
+            echo "idpool=projects/959666683579/locations/global/workloadIdentityPools/weave-mods-pool/providers/github" >> $GITHUB_OUTPUT
             echo "sa=weave-mods-builder@wandb-production.iam.gserviceaccount.com" >> $GITHUB_OUTPUT
           else
             echo "image=us-central1-docker.pkg.dev/wandb-qa/mods/dev" >> $GITHUB_OUTPUT
-            echo "idpool=projects/wandb-qa/locations/global/workloadIdentityPools/weave-mods-pool/providers/github" >> $GITHUB_OUTPUT
+            echo "idpool=projects/281760294016/locations/global/workloadIdentityPools/weave-mods-pool/providers/github" >> $GITHUB_OUTPUT
             echo "sa=weave-mods-builder@wandb-qa.iam.gserviceaccount.com" >> $GITHUB_OUTPUT
           fi
 
