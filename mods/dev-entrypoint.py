@@ -270,7 +270,7 @@ async def main():
         raise ValueError(f"Unsupported flavor: {flavor}")
     print(f"Running {flavor} app from {os.getcwd()}: {" ".join(args)}")
     # Start healthcheck.py in the background
-    health_log = open("/mods/health.log", "w")
+    health_log = open("/tmp/health.log", "w")
     await asyncio.create_subprocess_exec(
         "uv",
         "run",
