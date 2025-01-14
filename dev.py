@@ -29,7 +29,7 @@ app = typer.Typer(no_args_is_help=True)
 
 def ensure_dev():
     if len(sys.argv) > 1:
-        if os.path.exists(sys.argv[1]):
+        if os.path.exists(sys.argv[1]) or sys.argv[1].startswith("pkg:"):
             return sys.argv.insert(1, "dev")
 
 

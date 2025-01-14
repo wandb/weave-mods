@@ -1,5 +1,5 @@
 # Set default registry
-registry := "localhost:5001/mods"
+default_registry := "localhost:5001/mods"
 
 # Conditionally add --push flag
 push := env_var_or_default("PUSH", "")
@@ -16,7 +16,7 @@ _check-gh-auth:
     fi
 
 # Build development image
-docker-dev:
+docker-dev registry=default_registry:
     docker build . -f Dockerfile.dev --tag {{registry}}/dev {{docker-flags}}
 
 docker-ghlogin token=`gh auth token` user=`gh api user -q .login`: _check-gh-auth

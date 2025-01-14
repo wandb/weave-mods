@@ -20,9 +20,9 @@ RUN uv venv && \
 COPY mods /mods
 COPY sdk /sdk
 
-EXPOSE 8501
+EXPOSE 6637
 
-HEALTHCHECK --start-interval=1s --start-period=30s --interval=10s  CMD test -f /tmp/mod-ready
+HEALTHCHECK --start-interval=1s --start-period=30s --interval=10s CMD curl -f http://localhost:6638/health
 
 ENTRYPOINT [ "/app/.local/bin/dumb-init", "--"]
 

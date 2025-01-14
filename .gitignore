@@ -6,5 +6,6 @@ __pycache__/
 mods/**/.dockerignore
 mods/**/Dockerfile
 mods/**/healthcheck.py
+mods/health.log
 !mods/healthcheck.py
 build_output.json
