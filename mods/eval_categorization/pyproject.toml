@@ -1,0 +1,22 @@
+[project]
+name = "eval-categorization"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "joblib>=1.4.2",
+    "openai>=1.59.7",
+    "streamlit>=1.41.1",
+    "weave>=0.51.28",
+]
+
+[tool.weave.mod]
+flavor = "streamlit"
+secrets = ["OPENAI_API_KEY", "WANDB_API_KEY"]
+# Optional, inferred from flavor
+port = 6637
+entrypoint = "app.py"
+
+[tool.weave.mod.env]
+DEFAULT_OPENAI_MODEL = "gpt-4o-mini"
