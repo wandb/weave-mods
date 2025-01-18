@@ -22,6 +22,8 @@ def initialize_session_state():
         st.session_state["parser"] = False
     if "n_jobs" not in st.session_state:
         st.session_state["n_jobs"] = 10
+    if "node_wise" not in st.session_state:
+        st.session_state["node_wise"] = False
 
 
 initialize_session_state()
@@ -49,6 +51,9 @@ st.session_state["max_predict_and_score_calls"] = (
     else None
 )
 
+node_wise = st.sidebar.checkbox("Node-wise Summarization", value=False)
+st.session_state["node_wise"] = node_wise
+
 n_jobs = st.sidebar.slider(
     "Number of Jobs",
     min_value=1,
@@ -73,7 +78,7 @@ if st.session_state["register_calls_button"]:
             project=st.session_state["wandb_project"],
             call_id=st.session_state["call_id"],
         )
-        with st.spinner("Registering calls..."):
+        with st.spinner("Registering calls"):
             st.session_state["parser"].register_predict_and_score_calls(
                 failure_condition=st.session_state["failure_condition"],
                 max_predict_and_score_calls=st.session_state[
@@ -82,9 +87,10 @@ if st.session_state["register_calls_button"]:
                 n_jobs=st.session_state["n_jobs"],
                 save_filepath="evaluation.json",
             )
-            st.write(st.session_state["parser"].predict_and_score_calls)
-        with st.spinner("Summarizing calls..."):
+            # st.write(st.session_state["parser"].predict_and_score_calls)
+        with st.spinner("Summarizing calls"):
             summary = st.session_state["parser"].summarize(
-                n_jobs=st.session_state["n_jobs"]
+                node_wise=st.session_state["node_wise"],
+                n_jobs=st.session_state["n_jobs"],
             )
-            st.write(summary)
+            st.write(summary[0])

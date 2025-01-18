@@ -9,6 +9,7 @@ from rich.progress import track
 
 from .utils import (
     serialize_input_output_objects,
+    summarize_single_node,
     summarize_single_predict_and_score_call,
 )
 
@@ -77,12 +78,14 @@ class EvaluationClassifier:
             json.dump(self.predict_and_score_calls, file, indent=4)
 
     @weave.op()
-    def summarize(self, n_jobs: int = 10) -> str:
-        def process_call(call):
-            return summarize_single_predict_and_score_call(call)
-
+    def summarize(self, node_wise: bool = False, n_jobs: int = 10) -> str:
+        summarization_fn = (
+            summarize_single_predict_and_score_call
+            if node_wise
+            else summarize_single_node
+        )
         self.predict_and_score_call_summaries = Parallel(n_jobs=n_jobs)(
-            delayed(process_call)(call) for call in self.predict_and_score_calls
+            delayed(summarization_fn)(call) for call in self.predict_and_score_calls
         )
 
         rich.print("INFO:\tCompleted summarizing `Evaluation.predict_and_score` calls.")

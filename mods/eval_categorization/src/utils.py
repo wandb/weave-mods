@@ -59,17 +59,20 @@ def summarize_single_node(node: dict) -> str:
                 "content": """
 You are a helpful assistant meant to summarize the call trace (given in JSON format)
 of a function in a simple and insightful manner.
+
 The call trace would be a dictionary with the following keys:
 - id: The ID of the call
 - call_name: The name of the call
 - inputs: The inputs to the call
 - outputs: The outputs of the call
 - child_calls: The child calls of the call
+
 Here are some instructions that you must follow:
 1. The summary should be simple and insightful.
 2. You must start the summary with the following sentence:
 `Here's a summary of the call trace {call_name} with ID {id}:`
 3. You should take into account the summaries of the child calls when summarizing the parent call.
+4. You must summarize each call in the call trace, including all the child calls.
 """,
             },
             {
