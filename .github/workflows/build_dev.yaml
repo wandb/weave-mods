@@ -71,6 +71,9 @@ jobs:
         run: |
           gcloud auth configure-docker us-central1-docker.pkg.dev
 
+      - name: Set up Depot CLI
+        uses: depot/setup-action@v1
+
       - name: Docker Buildx (Build & Push)
         uses: depot/build-push-action@v1
         with:
