@@ -27,7 +27,7 @@ class EvaluationClassifier:
         failure_condition: str,
         max_predict_and_score_calls: Optional[int] = None,
         save_filepath: Optional[str] = None,
-        max_workers: Optional[int] = None,
+        n_jobs: Optional[int] = None,
     ):
         count_traces_parsed = 0
         for predict_and_score_call in track(
@@ -52,7 +52,7 @@ class EvaluationClassifier:
             len(self.predict_and_score_calls),
         )
 
-        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        with ThreadPoolExecutor(max_workers=n_jobs) as executor:
             self.predict_and_score_calls = list(
                 executor.map(self.parse_call, self.predict_and_score_calls)
             )

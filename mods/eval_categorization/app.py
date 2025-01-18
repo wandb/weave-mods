@@ -1,7 +1,10 @@
 import os
 
 import streamlit as st
+from dotenv import load_dotenv
 from src.eval_classification import EvaluationClassifier
+
+load_dotenv()
 
 
 def initialize_session_state():
@@ -17,8 +20,8 @@ def initialize_session_state():
         st.session_state["register_calls_button"] = False
     if "parser" not in st.session_state:
         st.session_state["parser"] = False
-    if "n_registration_jobs" not in st.session_state:
-        st.session_state["n_registration_jobs"] = 10
+    if "n_jobs" not in st.session_state:
+        st.session_state["n_jobs"] = 10
 
 
 initialize_session_state()
@@ -46,7 +49,7 @@ st.session_state["max_predict_and_score_calls"] = (
     else None
 )
 
-n_registration_jobs = st.sidebar.slider(
+n_jobs = st.sidebar.slider(
     "Number of Jobs",
     min_value=1,
     max_value=(
@@ -56,9 +59,9 @@ n_registration_jobs = st.sidebar.slider(
     ),
     value=10,
 )
-st.session_state["n_registration_jobs"] = n_registration_jobs
+st.session_state["n_jobs"] = n_jobs
 
-register_calls_button = st.sidebar.button("Register Calls")
+register_calls_button = st.sidebar.button("Register and Summarize Calls")
 st.session_state["register_calls_button"] = register_calls_button
 
 if st.session_state["register_calls_button"]:
@@ -76,7 +79,12 @@ if st.session_state["register_calls_button"]:
                 max_predict_and_score_calls=st.session_state[
                     "max_predict_and_score_calls"
                 ],
-                max_workers=st.session_state["n_registration_jobs"],
+                n_jobs=st.session_state["n_jobs"],
                 save_filepath="evaluation.json",
             )
             st.write(st.session_state["parser"].predict_and_score_calls)
+        with st.spinner("Summarizing calls..."):
+            summary = st.session_state["parser"].summarize(
+                n_jobs=st.session_state["n_jobs"]
+            )
+            st.write(summary)

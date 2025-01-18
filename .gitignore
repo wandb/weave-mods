@@ -10,3 +10,4 @@ mods/health.log
 !mods/healthcheck.py
 build_output.json
 mods/**/**.egg-info/
+mods/**/.env
