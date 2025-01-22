@@ -1,0 +1,30 @@
+[project]
+name = "guardrails-playground"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "safeguards @ git+https://github.com/soumik12345/safeguards.git",
+    "streamlit>=1.41.1",
+    "torch>=2.5.1",
+    "transformers>=4.48.1",
+]
+
+[dependency-groups]
+dev = [
+    "mods",
+]
+
+[tool.uv.sources]
+mods = { path = "../../sdk", editable = true }
+
+[tool.weave.mod]
+flavor = "streamlit"
+secrets = ["OPENAI_API_KEY", "WANDB_API_KEY"]
+# Optional, inferred from flavor
+port = 6637
+entrypoint = "app.py"
+
+[tool.weave.mod.env]
+DEFAULT_OPENAI_MODEL = "gpt-4o-mini"

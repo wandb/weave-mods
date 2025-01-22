@@ -62,13 +62,26 @@
             "WANDB_API_KEY"
         ]
     },
+    "guardrails_playground": {
+        "name": "guardrails_playground",
+        "classifiers": [],
+        "entrypoint": [
+            "app.py"
+        ],
+        "description": "Add your description here",
+        "version": "0.1.0",
+        "secrets": [
+            "OPENAI_API_KEY",
+            "WANDB_API_KEY"
+        ]
+    },
     "dashboard": {
         "name": "dashboard",
         "classifiers": [],
         "entrypoint": [
             "streamlit",
             "run",
-            "/app/src/Overview.py",
+            "/app/src/app.py",
             "--server.port=6637",
             "--server.address=0.0.0.0",
             "--server.enableCORS=false",
@@ -87,7 +100,7 @@
         "entrypoint": [
             "streamlit",
             "run",
-            "/app/src/Overview.py",
+            "/app/src/app.py",
             "--server.port=6637",
             "--server.address=0.0.0.0",
             "--server.enableCORS=false",
@@ -104,7 +117,7 @@
         "entrypoint": [
             "streamlit",
             "run",
-            "/app/src/Overview.py",
+            "/app/src/app.py",
             "--server.port=6637",
             "--server.address=0.0.0.0",
             "--server.enableCORS=false",
@@ -124,7 +137,7 @@
         "entrypoint": [
             "streamlit",
             "run",
-            "/app/src/Overview.py",
+            "/app/src/app.py",
             "--server.port=6637",
             "--server.address=0.0.0.0",
             "--server.enableCORS=false",
