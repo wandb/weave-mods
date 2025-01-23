@@ -1,8 +1,3 @@
-torch = [
-    { index = "pytorch-cpu" },
-]
+# Guardrails Playground
 
-[[tool.uv.index]]
-name = "pytorch-cpu"
-url = "https://download.pytorch.org/whl/cpu"
-explicit = true
+This is a playground for testing different guardrails on for your LLM application.
