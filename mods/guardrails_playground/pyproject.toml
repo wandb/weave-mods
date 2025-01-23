@@ -5,17 +5,22 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "safeguards @ git+https://github.com/soumik12345/safeguards.git",
+    "safeguards>=0.0.6",
     "streamlit>=1.41.1",
+    "torch>=2.5.1",
 ]
 
 [dependency-groups]
-dev = [
-    "mods",
-]
+dev = ["mods"]
 
 [tool.uv.sources]
 mods = { path = "../../sdk", editable = true }
+torch = [{ index = "pytorch-cpu" }]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
 
 [tool.weave.mod]
 flavor = "streamlit"
