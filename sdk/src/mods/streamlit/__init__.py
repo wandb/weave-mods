@@ -5,6 +5,7 @@ from mods.streamlit.api import (
     get_objects,
     get_op_versions,
     get_ops,
+    resolve_refs,
     weave_client,
 )
 from mods.streamlit.chat import chat_thread
@@ -26,6 +27,7 @@ __all__ = [
     "get_calls",
     "get_ops",
     "get_op_versions",
+    "resolve_refs",
     "selectbox",
     "OP",
     "DATASET",

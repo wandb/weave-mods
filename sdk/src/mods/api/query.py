@@ -4,7 +4,6 @@ from dataclasses import dataclass
 from typing import Any, Callable, List, Optional
 
 import pandas as pd
-import streamlit as st
 from weave.trace.refs import ObjectRef, OpRef, parse_uri
 from weave.trace.weave_client import WeaveClient
 from weave.trace_server.trace_server_interface import CallsFilter
@@ -12,7 +11,6 @@ from weave.trace_server.trace_server_interface import CallsFilter
 from mods.api.pandas_util import pd_apply_and_insert
 from mods.api.weave_api_next import (
     weave_client_calls,
-    weave_client_get_batch,
     weave_client_objs,
     weave_client_ops,
 )
@@ -21,19 +19,6 @@ ST_HASH_FUNCS = {
     WeaveClient: lambda x: x._project_id(),
     CallsFilter: lambda x: x.model_dump_json(),
 }
-
-
-def simple_val(v):
-    if isinstance(v, dict):
-        return {k: simple_val(v) for k, v in v.items()}
-    elif isinstance(v, list):
-        return [simple_val(v) for v in v]
-    elif hasattr(v, "uri"):
-        return v.uri()
-    # elif hasattr(v, "__dict__"):
-    #     return {k: simple_val(v) for k, v in v.__dict__.items()}
-    else:
-        return v
 
 
 def nice_ref(x):
@@ -78,20 +63,6 @@ def split_obj_ref(series: pd.Series):
     if len(expanded.columns) > 7:
         result["path"] = pd_col_join(expanded.loc[:, expanded.columns > 6], "/")
     return result
-
-
-def resolve_refs(client, refs):
-    @st.cache_data(hash_funcs=ST_HASH_FUNCS)
-    def _cached_resolve_refs(client, refs):
-        # Resolve the refs and fetch the message.text field
-        # Note we do do this after grouping, so we don't over-fetch refs
-        ref_vals = weave_client_get_batch(client, refs)
-        ref_vals = simple_val(ref_vals)
-        ref_val_df = pd.json_normalize(ref_vals)
-        ref_val_df.index = refs
-        return ref_val_df
-
-    return _cached_resolve_refs(client, refs)
 
 
 @dataclass

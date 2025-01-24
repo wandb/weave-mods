@@ -12,6 +12,7 @@ from mods.api.query import ST_HASH_FUNCS, Calls, Obj, Op, get_objs
 from mods.api.query import get_calls as api_get_calls
 from mods.api.query import get_op_versions as api_get_op_versions
 from mods.api.query import get_ops as api_get_ops
+from mods.api.weave_api_next import weave_client_get_batch
 
 default_entity: str | None = os.getenv("WANDB_ENTITY")
 weave_clients: Dict[str, WeaveClient] = {}
@@ -110,6 +111,36 @@ def to_ref(name: str, project_id: str | None = None, type: str = "op"):
     return f"weave:///{project_id}/{type}/{name}"
 
 
+def simple_val(v: Any) -> str | List[str] | Dict[str, Any]:
+    if isinstance(v, dict):
+        return {k: simple_val(v) for k, v in v.items()}
+    elif isinstance(v, list):
+        return [simple_val(v) for v in v]
+    elif hasattr(v, "uri"):
+        return v.uri()
+    # elif hasattr(v, "__dict__"):
+    #     return {k: simple_val(v) for k, v in v.__dict__.items()}
+    else:
+        return v
+
+
+def resolve_refs(refs: List[str], client: WeaveClient | None = None) -> pd.DataFrame:
+    if client is None:
+        client = current_client()
+
+    @st.cache_data(hash_funcs=ST_HASH_FUNCS)
+    def _cached_resolve_refs(client, refs):
+        # Resolve the refs and fetch the message.text field
+        # Note we do do this after grouping, so we don't over-fetch refs
+        ref_vals = weave_client_get_batch(client, refs)
+        ref_vals = simple_val(ref_vals)
+        ref_val_df = pd.json_normalize(ref_vals)
+        ref_val_df.index = refs
+        return ref_val_df
+
+    return _cached_resolve_refs(client, refs)
+
+
 def get_calls(
     op_name: str | List[str] | List[Op] | None = None,
     input_refs: Dict[str, Any] | None = None,
@@ -148,7 +179,7 @@ def get_calls(
                 client, op_name, input_refs, calls_filter, callback=progress(status)
             )
 
-    @st.cache_data(persist="disk", hash_funcs=ST_HASH_FUNCS)  # Cache for 1 hour
+    @st.cache_data(persist="disk", hash_funcs=ST_HASH_FUNCS, ttl=3600)
     def cached_get_calls(client, op_name, input_refs, calls_filter, _progress):
         return api_get_calls(
             client, op_name, input_refs, calls_filter, callback=_progress
@@ -223,7 +254,7 @@ def get_ops(
     latest_only: bool = True,
     cached: bool = True,
     client: WeaveClient | None = None,
-) -> Calls:
+) -> List[Op]:
     """Fetch operations from Weave with optional caching.
 
     Args:
@@ -232,7 +263,7 @@ def get_ops(
         client: Optional WeaveClient instance
 
     Returns:
-        Calls object containing the fetched operations
+        List of operations
     """
     if client is None:
         client = current_client()
@@ -251,7 +282,7 @@ def get_op_versions(
     include_call_counts: bool = False,
     cached: bool = True,
     client: WeaveClient | None = None,
-):
+) -> List[Op]:
     """Fetch versions of a specific operation from Weave with optional caching.
 
     Args:
@@ -282,6 +313,7 @@ __all__ = [
     "get_op_versions",
     "current_project_id",
     "to_ref",
+    "resolve_refs",
     "weave_client",
     "current_client",
     "CallsFilter",
