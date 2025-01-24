@@ -3,7 +3,7 @@ from typing import Any, Callable, List, Optional, Sequence, Union
 import streamlit as st
 
 from mods.api import query
-from mods.streamlit.api import current_client, get_objects
+from mods.streamlit import api
 from mods.streamlit.selectbox import BoxSelector
 
 SelectOptions = Union[query.Op, query.Calls, List[query.Obj], BoxSelector]
@@ -35,6 +35,8 @@ def multiselect(
         selector:
             - Selector.DATASET: Select from available datasets
             - Selector.MODEL: Select from available models
+            - Selector.EVALUATION: Select from available evaluations
+            - Selector.PROMPT: Select from available prompts
         default: Optional callback that takes a sequence of strings and returns
             default selected values.
         sort_key: Optional function to sort the input items (used for Calls and Objects).
@@ -53,15 +55,21 @@ def multiselect(
         ValueError: If the input type is not supported.
     """
     if client is None:
-        client = current_client()
+        client = api.current_client()
 
     # TODO: rethink this...
     if options == BoxSelector.DATASET:
-        options = get_objects(client, "Dataset", cached=False)
+        options = api.get_objects("Dataset", cached=False, client=client)
         kwargs["placeholder"] = "Select Datasets..."
     elif options == BoxSelector.MODEL:
-        options = get_objects(client, "Model", cached=False)
+        options = api.get_objects("Model", cached=False, client=client)
         kwargs["placeholder"] = "Select Models..."
+    elif options == BoxSelector.EVALUATION:
+        options = api.get_objects("Evaluation", cached=False, client=client)
+        kwargs["placeholder"] = "Select Evaluations..."
+    elif options == BoxSelector.PROMPT:
+        options = api.get_objects("Prompt", cached=False, client=client)
+        kwargs["placeholder"] = "Select Prompts..."
 
     if type(options).__name__ == "Op":
         return version_multiselect(client, label, options, default)
@@ -81,7 +89,7 @@ def version_multiselect(
     op: query.Op,
     default: Optional[Callable[[Sequence[str]], Any]] = None,
 ) -> List[query.Op]:
-    versions = query.get_op_versions(client, op)
+    versions = api.get_op_versions(op, client=client)
     if default is None:
         default_val = [versions[0]]
     else:

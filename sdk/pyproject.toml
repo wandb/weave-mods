@@ -4,11 +4,7 @@ version = "0.1.0"
 description = "Helpers for building Weave Mods"
 readme = "README.md"
 requires-python = ">=3.12"
-dependencies = [
-    "pandas>=2.2.3",
-    "streamlit>=1.40.0",
-    "weave>=0.51.19",
-]
+dependencies = ["pandas>=2.2.3", "streamlit>=1.40.0", "weave>=0.51.30"]
 
 [build-system]
 requires = ["hatchling"]
@@ -16,10 +12,13 @@ build-backend = "hatchling.build"
 
 [dependency-groups]
 dev = [
+    "ipython>=8.31.0",
     "mypy>=1.13.0",
     "pandas-stubs>=2.2.3.241126",
     "pre-commit>=4.0.1",
 ]
 
 [tool.uv]
-override-dependencies = ["weave @ git+https://github.com/wandb/weave.git@chore/py-typed"]
+override-dependencies = [
+    "weave @ git+https://github.com/wandb/weave.git@master",
+]
