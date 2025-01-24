@@ -250,6 +250,7 @@ source = { virtual = "." }
 dependencies = [
     { name = "joblib" },
     { name = "openai" },
+    { name = "pandas" },
     { name = "python-dotenv" },
     { name = "streamlit" },
     { name = "weave" },
@@ -264,6 +265,7 @@ dev = [
 requires-dist = [
     { name = "joblib", specifier = ">=1.4.2" },
     { name = "openai", specifier = ">=1.59.7" },
+    { name = "pandas", specifier = ">=2.2.3" },
     { name = "python-dotenv", specifier = ">=1.0.1" },
     { name = "streamlit", specifier = ">=1.41.1" },
     { name = "weave", specifier = ">=0.51.28" },
