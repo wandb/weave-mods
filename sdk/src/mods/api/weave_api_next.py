@@ -160,26 +160,32 @@ class CallsIter:
 
 def weave_client_calls(
     self: WeaveClient,
-    op_names,
-    input_refs=None,
+    op_names: list[str] | str | None = None,
+    input_refs: list[str] | str | None = None,
+    trace_server_filt: CallsFilter | None = None,
+    trace_roots_only: bool | None = None,
     limit: int | None = None,
     callback: Optional[Callable[[int], None]] = None,
 ) -> CallsIter:
-    trace_server_filt = CallsFilter()
-    if op_names:
-        if isinstance(op_names, str):
-            op_names = [op_names]
-        op_ref_uris = []
-        for op_name in op_names:
-            if op_name.startswith("weave:///"):
-                op_ref_uris.append(op_name)
-            else:
-                if ":" not in op_name:
-                    op_name = op_name + ":*"
-                op_ref_uris.append(f"weave:///{self._project_id()}/op/{op_name}")
-        trace_server_filt.op_names = op_ref_uris
-    if input_refs:
-        trace_server_filt.input_refs = input_refs
+    if trace_server_filt is None:
+        trace_server_filt = CallsFilter()
+        trace_server_filt.trace_roots_only = trace_roots_only
+        if op_names:
+            if isinstance(op_names, str):
+                op_names = [op_names]
+            op_ref_uris = []
+            for op_name in op_names:
+                if op_name.startswith("weave:///"):
+                    op_ref_uris.append(op_name)
+                else:
+                    if ":" not in op_name:
+                        op_name = op_name + ":*"
+                    op_ref_uris.append(f"weave:///{self._project_id()}/op/{op_name}")
+            trace_server_filt.op_names = op_ref_uris
+        if input_refs:
+            if isinstance(input_refs, str):
+                input_refs = [input_refs]
+            trace_server_filt.input_refs = input_refs
     return CallsIter(
         self.server,
         self._project_id(),

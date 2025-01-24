@@ -4,32 +4,21 @@ from dataclasses import dataclass
 from typing import Any, Callable, List, Optional
 
 import pandas as pd
-import streamlit as st
 from weave.trace.refs import ObjectRef, OpRef, parse_uri
 from weave.trace.weave_client import WeaveClient
+from weave.trace_server.trace_server_interface import CallsFilter
 
 from mods.api.pandas_util import pd_apply_and_insert
 from mods.api.weave_api_next import (
     weave_client_calls,
-    weave_client_get_batch,
     weave_client_objs,
     weave_client_ops,
 )
 
-ST_HASH_FUNCS = {WeaveClient: lambda x: x._project_id()}
-
-
-def simple_val(v):
-    if isinstance(v, dict):
-        return {k: simple_val(v) for k, v in v.items()}
-    elif isinstance(v, list):
-        return [simple_val(v) for v in v]
-    elif hasattr(v, "uri"):
-        return v.uri()
-    # elif hasattr(v, "__dict__"):
-    #     return {k: simple_val(v) for k, v in v.__dict__.items()}
-    else:
-        return v
+ST_HASH_FUNCS = {
+    WeaveClient: lambda x: x._project_id(),
+    CallsFilter: lambda x: x.model_dump_json(),
+}
 
 
 def nice_ref(x):
@@ -76,20 +65,6 @@ def split_obj_ref(series: pd.Series):
     return result
 
 
-def resolve_refs(client, refs):
-    @st.cache_data(hash_funcs=ST_HASH_FUNCS)
-    def _cached_resolve_refs(client, refs):
-        # Resolve the refs and fetch the message.text field
-        # Note we do do this after grouping, so we don't over-fetch refs
-        ref_vals = weave_client_get_batch(client, refs)
-        ref_vals = simple_val(ref_vals)
-        ref_val_df = pd.json_normalize(ref_vals)
-        ref_val_df.index = refs
-        return ref_val_df
-
-    return _cached_resolve_refs(client, refs)
-
-
 @dataclass
 class Op:
     project_id: str
@@ -111,9 +86,9 @@ class Op:
         return f"{name}:v{self.version_index}"
 
 
-def get_ops(_client: WeaveClient):
+def get_ops(_client: WeaveClient, latest_only=True):
     # client = weave.init(project_name)
-    client_ops = weave_client_ops(_client, latest_only=True)
+    client_ops = weave_client_ops(_client, latest_only=latest_only)
     return [
         Op(op.project_id, op.object_id, op.digest, op.version_index)
         for op in client_ops
@@ -191,7 +166,7 @@ def friendly_dtypes(df):
         non_null_series = series.dropna()
 
         if non_null_series.empty:
-            return "unknown"
+            return "empty"
 
         # Check for boolean-like columns
         if all(
@@ -239,13 +214,47 @@ class Calls:
             cols = sorted(cols, key=sort_key)
         return cols
 
+    def __repr__(self):
+        def format_column_type(col: str, dtype: str) -> str:
+            if dtype == "object":
+                # Get first non-null value without scanning entire column
+                mask = self.df[col].notna()
+                sample = self.df[col].iloc[mask.idxmax()] if mask.any() else None
+                if sample is not None:
+                    if isinstance(sample, dict):
+                        keys = list(sample.keys())
+                        key_preview = ", ".join(sorted(keys)[:3])
+                        if len(keys) > 3:
+                            key_preview += ", ..."
+                        return f"{col}: dict[{len(keys)} keys: {key_preview}]"
+                    elif isinstance(sample, (list, tuple)):
+                        # Peek into first item if it's a dict
+                        if len(sample) > 0 and isinstance(sample[0], dict):
+                            keys = sample[0].keys()
+                            key_preview = ", ".join(sorted(keys)[:3])
+                            if len(keys) > 3:
+                                key_preview += ", ..."
+                            return f"{col}: {type(sample).__name__}[{len(sample)} items, first item: dict({key_preview})]"
+                        return f"{col}: {type(sample).__name__}[{len(sample)} items]"
+                    return f"{col}: {type(sample).__name__}"
+            return f"{col}: {dtype}"
+
+        dtypes = {
+            col: dtype
+            for col, dtype in friendly_dtypes(self.df).items()
+            if dtype != "empty"
+        }
+        col_info = [format_column_type(col, dtype) for col, dtype in dtypes.items()]
+        return f"Calls(rows={len(self.df)}, columns=[\n  {',\n  '.join(col_info)}\n])"
+
 
 def get_calls(
     _client: WeaveClient,
     op_name: str | List[str] | List[Op] | None,
-    input_refs=None,
+    input_refs: list[str] | str | None = None,
+    calls_filter: CallsFilter | None = None,
+    trace_roots_only: bool | None = None,
     limit: int | None = None,
-    cache_key=None,
     callback: Optional[Callable[[int], None]] = None,
 ):
     if isinstance(op_name, list):
@@ -275,7 +284,15 @@ def get_calls(
             "summary": c.summary,
             "ended_at": c.ended_at,
         }
-        for c in weave_client_calls(_client, op_names, input_refs, limit, callback)
+        for c in weave_client_calls(
+            _client,
+            op_names,
+            input_refs,
+            calls_filter,
+            trace_roots_only,
+            limit,
+            callback,
+        )
     ]
     df = pd.json_normalize(call_list)
 
