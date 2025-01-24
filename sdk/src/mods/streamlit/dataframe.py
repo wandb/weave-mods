@@ -129,7 +129,7 @@ def tracetable(
         client = current_client()
 
     if dataframe is None:
-        calls = get_calls(client, op_names, input_refs, cached)
+        calls = get_calls(op_names, input_refs, cached=cached, client=client)
     else:
         calls = query.Calls(dataframe)
     column_config = {}
