@@ -3,7 +3,7 @@ name = "eval-categorization"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.12"
 dependencies = [
     "joblib>=1.4.2",
     "openai>=1.59.7",
@@ -11,6 +11,12 @@ dependencies = [
     "streamlit>=1.41.1",
     "weave>=0.51.28",
 ]
+
+[dependency-groups]
+dev = ["mods"]
+
+[tool.uv.sources]
+mods = { path = "../../sdk", editable = true }
 
 [tool.weave.mod]
 flavor = "streamlit"
