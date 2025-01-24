@@ -14,13 +14,15 @@ import streamlit as st
 from weave.trace.weave_client import WeaveClient
 
 from mods.api import query
-from mods.streamlit.api import current_client
+from mods.streamlit import api
 
 
 class BoxSelector(Enum):
     OP = auto()
     DATASET = auto()
     MODEL = auto()
+    EVALUATION = auto()
+    PROMPT = auto()
     OBJECT = auto()
 
 
@@ -46,6 +48,8 @@ def selectbox(
             - Selector.OP: Select from available ops
             - Selector.DATASET: Select from available datasets
             - Selector.MODEL: Select from available models
+            - Selector.EVALUATION: Select from available evaluations
+            - Selector.PROMPT: Select from available prompts
             - Selector.OBJECT: Select from available objects of specified types
         sort_key (Optional[Callable[[Any], Any]], optional): Function to determine the sort order
             of the options. Defaults to None.
@@ -58,7 +62,7 @@ def selectbox(
         Any: The selected object, or None if nothing is selected.
     """
     if client is None:
-        client = current_client()
+        client = api.current_client()
 
     if isinstance(options, BoxSelector):
         kwargs: dict[str, Any] = {}
@@ -79,7 +83,7 @@ def op_selectbox(
     label: str,
     sort_key: Optional[Callable[[query.Op], Any]] = None,
 ) -> Optional[query.Op]:
-    ops = query.get_ops(client)
+    ops = api.get_ops(client=client)
     if sort_key is None:
 
         def sort_key(x: query.Op):
@@ -102,7 +106,7 @@ def obj_selectbox(
     object_types: List[str] | str = [],
     sort_key: Optional[Callable[[query.Obj], Any]] = None,
 ) -> Optional[query.Obj]:
-    objs = query.get_objs(client, types=object_types)
+    objs = api.get_objects(object_types, client=client)
     if sort_key:
         objs = sorted(objs, key=sort_key)
     # TODO: this article nonsense is a bit of a mess
@@ -136,6 +140,22 @@ def model_selectbox(
     return obj_selectbox(client, label, object_types=["Model"], sort_key=sort_key)
 
 
+def evaluation_selectbox(
+    client: WeaveClient,
+    label: str,
+    sort_key: Optional[Callable[[query.Obj], Any]] = None,
+) -> Optional[query.Obj]:
+    return obj_selectbox(client, label, object_types=["Evaluation"], sort_key=sort_key)
+
+
+def prompt_selectbox(
+    client: WeaveClient,
+    label: str,
+    sort_key: Optional[Callable[[query.Obj], Any]] = None,
+) -> Optional[query.Obj]:
+    return obj_selectbox(client, label, object_types=["Prompt"], sort_key=sort_key)
+
+
 P = ParamSpec("P")
 R = TypeVar("R", bound=Optional[Union[query.Op, query.Obj]])
 
@@ -145,5 +165,7 @@ selectors: Dict[BoxSelector, SelectorFunc] = {
     BoxSelector.OP: op_selectbox,
     BoxSelector.DATASET: dataset_selectbox,
     BoxSelector.MODEL: model_selectbox,
+    BoxSelector.EVALUATION: evaluation_selectbox,
+    BoxSelector.PROMPT: prompt_selectbox,
     BoxSelector.OBJECT: obj_selectbox,
 }

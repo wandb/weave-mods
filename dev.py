@@ -4,6 +4,7 @@
 # dependencies = [
 #     "typer",
 #     "toml",
+#     "requests",
 # ]
 # ///
 
@@ -343,7 +344,16 @@ def dev(directory: Annotated[str, typer.Argument()] = "."):
     except subprocess.CalledProcessError as e:
         typer.secho(f"Docker command failed: {e}", fg=typer.colors.RED)
     finally:
-        exit_code = process.wait()
+        exit_code = 1
+        try:
+            exit_code = process.wait()
+        except KeyboardInterrupt:
+            typer.secho(
+                "\nReceived interrupt signal, stopping container...",
+                fg=typer.colors.YELLOW,
+            )
+            process.terminate()
+            subprocess.run(["docker", "stop", container_name], check=False)
         if exit_code != 0:
             typer.secho(
                 f"Docker process exited with code {exit_code}", fg=typer.colors.RED

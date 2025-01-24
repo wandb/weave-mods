@@ -31,7 +31,7 @@ def chat_thread(call: pd.Series):
             'inputs.messages': [{'role': 'user', 'content': 'Hello'}],
             'output.choices': [{'message': {'role': 'assistant', 'content': 'Hi!'}}]
         })
-        call_chat_thread(chat_data)
+        chat_thread(chat_data)
         ```
     """
     st.write(f"Call: {call.id}")
