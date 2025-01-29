@@ -66,9 +66,16 @@
         "name": "guardrails_playground",
         "classifiers": [],
         "entrypoint": [
-            "app.py"
+            "streamlit",
+            "run",
+            "/app/src/Overview.py",
+            "--server.port=6637",
+            "--server.address=0.0.0.0",
+            "--server.enableCORS=false",
+            "--server.enableXsrfProtection=false",
+            "--client.toolbarMode=minimal"
         ],
-        "description": "Add your description here",
+        "description": "Test different types of guardrails for your LLM application",
         "version": "0.1.0",
         "secrets": [
             "OPENAI_API_KEY",
@@ -81,7 +88,7 @@
         "entrypoint": [
             "streamlit",
             "run",
-            "/app/src/app.py",
+            "/app/src/Overview.py",
             "--server.port=6637",
             "--server.address=0.0.0.0",
             "--server.enableCORS=false",
@@ -100,7 +107,7 @@
         "entrypoint": [
             "streamlit",
             "run",
-            "/app/src/app.py",
+            "/app/src/Overview.py",
             "--server.port=6637",
             "--server.address=0.0.0.0",
             "--server.enableCORS=false",
@@ -117,7 +124,7 @@
         "entrypoint": [
             "streamlit",
             "run",
-            "/app/src/app.py",
+            "/app/src/Overview.py",
             "--server.port=6637",
             "--server.address=0.0.0.0",
             "--server.enableCORS=false",
@@ -137,7 +144,7 @@
         "entrypoint": [
             "streamlit",
             "run",
-            "/app/src/app.py",
+            "/app/src/Overview.py",
             "--server.port=6637",
             "--server.address=0.0.0.0",
             "--server.enableCORS=false",

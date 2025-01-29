@@ -2,7 +2,6 @@ import os
 import importlib
 
 import streamlit as st
-import wandb
 import weave
 
 from safeguards.llm import OpenAIModel
@@ -46,7 +45,6 @@ def initialize_session_state():
         st.session_state.restricted_terms_judge_should_anonymize = True
 
 
-wandb.login(key=os.environ.get("WANDB_API_KEY"), relogin=True)
 weave.init(project_name=os.environ.get("WANDB_PROJECT"))
 initialize_session_state()
 st.title(":material/robot: Safeguards Playground")
