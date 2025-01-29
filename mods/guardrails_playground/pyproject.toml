@@ -1,0 +1,30 @@
+[project]
+name = "guardrails-playground"
+version = "0.1.0"
+description = "Test different types of guardrails for your LLM application"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "safeguards>=0.0.6",
+    "streamlit>=1.41.1",
+    "torch>=2.5.1",
+]
+
+[dependency-groups]
+dev = ["mods"]
+
+[tool.uv.sources]
+mods = { path = "../../sdk", editable = true }
+torch = [{ index = "pytorch-cpu" }]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.weave.mod]
+flavor = "streamlit"
+secrets = ["OPENAI_API_KEY", "WANDB_API_KEY"]
+
+[tool.weave.mod.env]
+DEFAULT_OPENAI_MODEL = "gpt-4o-mini"

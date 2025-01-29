@@ -62,6 +62,26 @@
             "WANDB_API_KEY"
         ]
     },
+    "guardrails_playground": {
+        "name": "guardrails_playground",
+        "classifiers": [],
+        "entrypoint": [
+            "streamlit",
+            "run",
+            "/app/src/Overview.py",
+            "--server.port=6637",
+            "--server.address=0.0.0.0",
+            "--server.enableCORS=false",
+            "--server.enableXsrfProtection=false",
+            "--client.toolbarMode=minimal"
+        ],
+        "description": "Test different types of guardrails for your LLM application",
+        "version": "0.1.0",
+        "secrets": [
+            "OPENAI_API_KEY",
+            "WANDB_API_KEY"
+        ]
+    },
     "dashboard": {
         "name": "dashboard",
         "classifiers": [],
