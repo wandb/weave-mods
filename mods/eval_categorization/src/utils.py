@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Union
 import weave
 from openai import OpenAI
 from weave.trace.refs import ObjectRef, OpRef
-from weave.trace.vals import WeaveObject
+from weave.trace.vals import WeaveObject, WeaveDict, WeaveList
 
 
 def remove_class_key(d: Union[Dict, List]):
@@ -40,13 +40,19 @@ def serialize_weave_references(data: Any):
         return data
 
 
-def serialize_input_output_objects(inputs: Any) -> dict[str, Any]:
-    inputs = dict(inputs)
-    for key, val in inputs.items():
-        if isinstance(val, WeaveObject):
-            inputs[key] = serialize_weave_object(inputs[key])
-        inputs[key] = serialize_weave_references(inputs[key])
-    return inputs
+def serialize_input_output_objects(
+    io_objects: Union[Any, WeaveObject, WeaveDict, WeaveList],
+) -> dict[str, Any]:
+    if isinstance(io_objects, WeaveObject):
+        return serialize_input_output_objects(io_objects._val)
+    if isinstance(io_objects, WeaveDict):
+        deserialized_dict = dict(io_objects)
+        for key, value in deserialized_dict.items():
+            deserialized_dict[key] = serialize_input_output_objects(value)
+        return deserialized_dict
+    if isinstance(io_objects, WeaveList):
+        return [serialize_input_output_objects(item) for item in io_objects]
+    return io_objects
 
 
 @weave.op()

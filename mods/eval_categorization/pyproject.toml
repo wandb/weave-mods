@@ -11,13 +11,8 @@ dependencies = [
     "python-dotenv>=1.0.1",
     "streamlit>=1.41.1",
     "weave>=0.51.28",
+    "uv",
 ]
-
-[dependency-groups]
-dev = ["mods"]
-
-[tool.uv.sources]
-mods = { path = "../../sdk", editable = true }
 
 [tool.weave.mod]
 flavor = "streamlit"

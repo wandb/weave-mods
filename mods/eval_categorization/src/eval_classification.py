@@ -1,5 +1,4 @@
 import json
-from concurrent.futures import ThreadPoolExecutor
 from typing import Optional
 
 import rich
@@ -14,11 +13,27 @@ from .utils import (
 )
 
 
+DEFAULT_STOCHASTIC_CALL_NAMES = [
+    "openai.beta.chat.completions.parse",
+    "openai.beta.chat.completions.create",
+    "openai.chat.completions.create",
+]
+
+
 class EvaluationClassifier:
-    def __init__(self, project: str, call_id: str) -> None:
+    def __init__(
+        self,
+        project: str,
+        call_id: str,
+        stochastic_call_names: Optional[list[str]] = [],
+    ) -> None:
         self.base_call = weave.init(project).get_call(call_id=call_id)
         self.predict_and_score_calls = []
         self.predict_and_score_call_summaries = []
+        self.stochastic_call_names = (
+            stochastic_call_names + DEFAULT_STOCHASTIC_CALL_NAMES
+        )
+        self.stochastic_calls_in_predict_and_score_calls = []
 
     def _get_call_name_from_op_name(self, op_name: str) -> str:
         return op_name.split("/")[-1].split(":")[0]
@@ -28,7 +43,6 @@ class EvaluationClassifier:
         failure_condition: str,
         max_predict_and_score_calls: Optional[int] = None,
         save_filepath: Optional[str] = None,
-        n_jobs: Optional[int] = None,
     ):
         count_traces_parsed = 0
         for predict_and_score_call in track(
@@ -53,25 +67,44 @@ class EvaluationClassifier:
             len(self.predict_and_score_calls),
         )
 
-        with ThreadPoolExecutor(max_workers=n_jobs) as executor:
-            self.predict_and_score_calls = list(
-                executor.map(self.parse_call, self.predict_and_score_calls)
+        self.stochastic_calls_in_predict_and_score_calls = [[]] * len(
+            self.predict_and_score_calls
+        )
+        for idx in track(
+            range(len(self.predict_and_score_calls)), description="Parsing calls"
+        ):
+            self.predict_and_score_calls[idx] = self.parse_call(
+                self.predict_and_score_calls[idx], idx
             )
+        self.stochastic_calls_in_predict_and_score_calls = (
+            self.stochastic_calls_in_predict_and_score_calls[0]
+        )
 
         rich.print("INFO:\tCompleted parsing `Evaluation.predict_and_score` calls.")
 
         if len(self.predict_and_score_calls) > 0 and save_filepath is not None:
             self.save_calls(save_filepath)
 
-    def parse_call(self, child_call) -> dict:
-        call_dict = {
+    def parse_call(self, child_call, idx: int) -> dict:
+        call_name = self._get_call_name_from_op_name(child_call._op_name)
+        if call_name in self.stochastic_call_names:
+            self.stochastic_calls_in_predict_and_score_calls[idx].append(
+                {
+                    "id": child_call.id,
+                    "call_name": call_name,
+                    "inputs": serialize_input_output_objects(child_call.inputs),
+                    "outputs": serialize_input_output_objects(child_call.output),
+                }
+            )
+        return {
             "id": child_call.id,
-            "call_name": self._get_call_name_from_op_name(child_call._op_name),
-            "inputs": serialize_input_output_objects(child_call.inputs),
-            "outputs": serialize_input_output_objects(child_call.output),
-            "child_calls": [self.parse_call(child) for child in child_call.children()],
+            "call_name": call_name,
+            "inputs": child_call.inputs,
+            "outputs": child_call.output,
+            "child_calls": [
+                self.parse_call(child, idx) for child in child_call.children()
+            ],
         }
-        return call_dict
 
     def save_calls(self, filepath: str):
         with open(filepath, "w") as file:
