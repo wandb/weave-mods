@@ -137,5 +137,16 @@
             "WANDB_API_KEY",
             "OPENAI_API_KEY"
         ]
+    },
+    "pairwise": {
+        "name": "pairwise",
+        "classifiers": [],
+        "entrypoint": [
+            "python",
+            "/app/src/app.py"
+        ],
+        "description": "Simple pairwise labeling mod",
+        "version": "0.1.0",
+        "secrets": []
     }
 }
