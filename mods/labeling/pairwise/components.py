@@ -1,3 +1,5 @@
+from typing import Any
+
 from fasthtml.common import (
     Main,
     H2,
@@ -261,13 +263,12 @@ def create_layout():
     )
 
 
-def create_annotation_page(obj_ref, idx=0):
-    total_length = len(obj_ref)
+def create_annotation_page(record: dict[str, Any]):
     return Div(
         # Navigation Header
         Div(
             H3(
-                f"Sample {idx + 1} out of {total_length}",
+                f"Sample {record['idx'] + 1} out of {record['total_length']}",
                 cls="text-base font-semibold leading-6 text-gray-900",
             ),
             Div(
@@ -275,23 +276,23 @@ def create_annotation_page(obj_ref, idx=0):
                 A(
                     Span("Previous", cls="sr-only"),
                     Span("←", cls="h-5 w-5", aria_hidden="true"),
-                    hx_get=f"/annotate/{idx - 1}",
+                    hx_get=f"/annotate/{record['idx'] - 1}",
                     hx_target="#main-content",
                     hx_swap="innerHTML",
                     cls="relative inline-flex items-center rounded-l-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
-                    + (" pointer-events-none opacity-50" if idx == 0 else ""),
+                    + (" pointer-events-none opacity-50" if record["idx"] == 0 else ""),
                 ),
                 # Next Button
                 A(
                     Span("Next", cls="sr-only"),
                     Span("→", cls="h-5 w-5", aria_hidden="true"),
-                    hx_get=f"/annotate/{idx + 1}",
+                    hx_get=f"/annotate/{record['idx'] + 1}",
                     hx_target="#main-content",
                     hx_swap="innerHTML",
                     cls="relative -ml-px inline-flex items-center rounded-r-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
                     + (
                         " pointer-events-none opacity-50"
-                        if idx == total_length - 1
+                        if record["idx"] == record["total_length"] - 1
                         else ""
                     ),
                 ),
@@ -303,7 +304,7 @@ def create_annotation_page(obj_ref, idx=0):
         Div(
             H3("Prompt", cls="text-lg font-semibold mb-2"),
             Textarea(
-                obj_ref[idx].get("prompt", ""),
+                record["prompt"],
                 readonly=True,
                 cls="w-full p-4 border border-gray-300 rounded-md mb-6 min-h-[100px] bg-gray-50",
             ),
@@ -313,9 +314,9 @@ def create_annotation_page(obj_ref, idx=0):
         Div(
             # Primary Model Output
             Div(
-                H4("Primary Model", cls="text-sm font-medium text-gray-700 mb-2"),
+                H4("Model A", cls="text-sm font-medium text-gray-700 mb-2"),
                 Textarea(
-                    "Primary model output placeholder",
+                    record["response_a"],
                     readonly=True,
                     cls="w-full p-4 border border-gray-300 rounded-md min-h-[200px] bg-gray-50",
                 ),
@@ -323,9 +324,9 @@ def create_annotation_page(obj_ref, idx=0):
             ),
             # Challenger Model Output
             Div(
-                H4("Challenger Model", cls="text-sm font-medium text-gray-700 mb-2"),
+                H4("Model B", cls="text-sm font-medium text-gray-700 mb-2"),
                 Textarea(
-                    "Challenger model output placeholder",
+                    record["response_b"],
                     readonly=True,
                     cls="w-full p-4 border border-gray-300 rounded-md min-h-[200px] bg-gray-50",
                 ),

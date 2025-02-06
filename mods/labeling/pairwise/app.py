@@ -1,5 +1,6 @@
 import csv
 import os
+from typing import Sized
 
 import wandb
 import weave
@@ -9,8 +10,10 @@ from fasthtml.common import fast_app, Script, Meta, Link, Request, serve, P, Div
 from starlette.datastructures import FormData
 from litellm import check_valid_key
 
-DS_NAME = None
+from llm_ops import run_llms_pairwise
 
+WS_DATA: Sized | None = None
+MODELS_DICT: dict | None = None
 app, rt = fast_app(
     # live=True,
     pico=True,
@@ -74,18 +77,21 @@ async def post(request: Request):
             "model": contents["challenger_model"],
             "api_key": contents["challenger_api_key"],
         }
+        global MODELS_DICT
+        MODELS_DICT = {"model_a": model_a, "model_b": model_b}
         validate_apis(
             wandb_api_key=contents["wandb_key"], model_a=model_a, model_b=model_b
         )
 
         _ = weave.init(f"{contents['wandb_entity']}/{contents['wandb_project']}")
         ds_name, dataset = await parse_file(contents["FileUpload"])
-        global DS_NAME
-        DS_NAME = ds_name
         ws_ds = weave.Dataset(name=ds_name, rows=dataset)
         ds_obj_ref = weave.publish(ws_ds)
+        global WS_DATA
+        WS_DATA = ds_obj_ref.get().rows
         print("Dataset published successfully")  # Debug log
-        return create_annotation_page(ds_obj_ref.get().rows)
+
+        return await get_annotation(idx=0)
     except ValueError as e:
         print(f"Error occurred: {e}")  # Debug log
         return Div(
@@ -105,15 +111,25 @@ async def get_annotation(idx: int):
     # Get the current dataset from weave
     try:
         # Get the most recent dataset
-        latest_dataset = weave.ref(f"{DS_NAME}:latest")
-        rows = latest_dataset.get().rows
-
+        rows = WS_DATA
         # Convert string idx to int and validate
         idx = int(idx)
         if idx < 0 or idx >= len(rows):
             return "Invalid index"
-
-        return create_annotation_page(rows, idx)
+        prompt = rows[idx].get("prompt")
+        response_dict = await run_llms_pairwise(
+            model_a=MODELS_DICT["model_a"],
+            model_b=MODELS_DICT["model_b"],
+            prompt=prompt,
+        )
+        record = {
+            "idx": idx,
+            "total_length": len(rows),
+            "prompt": prompt,
+            "response_a": response_dict["response_a"],
+            "response_b": response_dict["response_b"],
+        }
+        return create_annotation_page(record)
     except Exception as e:
         print(f"Error in get_annotation: {e}")  # Debug log
         return str(e)

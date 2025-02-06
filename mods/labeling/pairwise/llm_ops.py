@@ -13,7 +13,7 @@ async def run_llm(prompt: str, **kwargs) -> str:
 
 
 @weave.op
-async def run_llm_pairwise(
+async def run_llms_pairwise(
     model_a: dict[str, Any], model_b: dict[str, Any], prompt: str, **kwargs
 ) -> dict[str, str]:
     response_a = run_llm(prompt=prompt, **model_a, **kwargs)
@@ -33,7 +33,7 @@ async def main():
         "api_key": os.environ.get("OPENAI_API_KEY"),
     }
     prompt = "What is the meaning of life?"
-    result = await run_llm_pairwise(model_a=model_a, model_b=model_b, prompt=prompt)
+    result = await run_llms_pairwise(model_a=model_a, model_b=model_b, prompt=prompt)
     print(result)
 
 
