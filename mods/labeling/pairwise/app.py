@@ -7,8 +7,9 @@ import weave
 from components import create_annotation_page, create_layout
 from fasthtml.common import fast_app, Script, Meta, Link, Request, serve, P, Div
 from starlette.datastructures import FormData
+from litellm import check_valid_key
 
-WS_DS = None
+DS_NAME = None
 
 app, rt = fast_app(
     # live=True,
@@ -33,13 +34,18 @@ def get():
     return create_layout()
 
 
-def validate_wandb(entity: str, project: str, api_key: str):
+def validate_apis(wandb_api_key: str, model_a: dict[str, str], model_b: dict[str, str]):
     try:
-        logged_in = wandb.login(key=api_key, verify=True)
-
+        valid_wandb = wandb.login(key=wandb_api_key, verify=True)
+        valid_model_a = check_valid_key(**model_a)
+        if not valid_model_a:
+            raise ValueError(f"Incorrect API Key set for Model: {model_a['model']}")
+        valid_model_b = check_valid_key(**model_b)
+        if not valid_model_b:
+            raise ValueError(f"Incorrect API Key set for Model: {model_b['model']}")
     except ValueError as e:
         raise e
-    return logged_in
+    return valid_wandb and valid_model_a and valid_model_b
 
 
 async def parse_file(file_obj):
@@ -60,24 +66,31 @@ async def post(request: Request):
     contents: FormData = await request.form()
     try:
         print("Form contents:", contents)  # Debug log
-        valid_key = validate_wandb(
-            entity=contents["wandb_entity"],
-            project=contents["wandb_project"],
-            api_key=contents["wandb_key"],
+        model_a = {
+            "model": contents["primary_model"],
+            "api_key": contents["primary_api_key"],
+        }
+        model_b = {
+            "model": contents["challenger_model"],
+            "api_key": contents["challenger_api_key"],
+        }
+        validate_apis(
+            wandb_api_key=contents["wandb_key"], model_a=model_a, model_b=model_b
         )
-        if valid_key:
-            _ = weave.init(f"{contents['wandb_entity']}/{contents['wandb_project']}")
-            ds_name, dataset = await parse_file(contents["FileUpload"])
-            global WS_DS
-            WS_DS = weave.Dataset(name=ds_name, rows=dataset)
-            ds_obj_ref = weave.publish(WS_DS)
-            print("Dataset published successfully")  # Debug log
-            return create_annotation_page(ds_obj_ref.get().rows)
+
+        _ = weave.init(f"{contents['wandb_entity']}/{contents['wandb_project']}")
+        ds_name, dataset = await parse_file(contents["FileUpload"])
+        global DS_NAME
+        DS_NAME = ds_name
+        ws_ds = weave.Dataset(name=ds_name, rows=dataset)
+        ds_obj_ref = weave.publish(ws_ds)
+        print("Dataset published successfully")  # Debug log
+        return create_annotation_page(ds_obj_ref.get().rows)
     except ValueError as e:
         print(f"Error occurred: {e}")  # Debug log
         return Div(
             P(
-                f"W&B API Validation error: {e}",
+                f"API Authentication error: {e}",
                 cls="text-red-500 text-sm p-4 bg-red-50 border border-red-200 rounded-md",
             ),
             id="main-content",
@@ -85,7 +98,6 @@ async def post(request: Request):
     except Exception as e:
         print(f"Unexpected error: {e}")  # Debug log
         return str(e)
-    return "ok"
 
 
 @rt("/annotate/{idx}")
@@ -93,8 +105,7 @@ async def get_annotation(idx: int):
     # Get the current dataset from weave
     try:
         # Get the most recent dataset
-        global WS_DS
-        latest_dataset = weave.ref(f"{WS_DS}:latest").get()
+        latest_dataset = weave.ref(f"{DS_NAME}:latest")
         rows = latest_dataset.get().rows
 
         # Convert string idx to int and validate

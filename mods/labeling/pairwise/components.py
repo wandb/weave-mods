@@ -303,7 +303,7 @@ def create_annotation_page(obj_ref, idx=0):
         Div(
             H3("Prompt", cls="text-lg font-semibold mb-2"),
             Textarea(
-                obj_ref[idx].get("Prompt", ""),
+                obj_ref[idx].get("prompt", ""),
                 readonly=True,
                 cls="w-full p-4 border border-gray-300 rounded-md mb-6 min-h-[100px] bg-gray-50",
             ),
