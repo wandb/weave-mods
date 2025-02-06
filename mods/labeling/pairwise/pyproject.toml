@@ -5,6 +5,7 @@ description = "Simple pairwise labeling mod"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
+    "diskcache>=5.6.3",
     "litellm>=1.60.4",
     "python-fasthtml>=0.12.0",
     "weave>=0.51.17",

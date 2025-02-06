@@ -1,21 +1,21 @@
 from typing import Any
 
 from fasthtml.common import (
-    Main,
     H2,
     H3,
     H4,
-    Span,
+    A,
+    Button,
     Div,
     Form,
-    Label,
     Input,
-    Select,
+    Label,
+    Main,
     Option,
-    Script,
-    Button,
     P,
-    A,
+    Script,
+    Select,
+    Span,
     Textarea,
 )
 
@@ -333,6 +333,62 @@ def create_annotation_page(record: dict[str, Any]):
                 cls="flex-1",
             ),
             cls="flex gap-4",
+        ),
+        # Preference Selection Form
+        Div(
+            H3("Preference Selection", cls="text-lg font-semibold mt-6 mb-2"),
+            P(
+                "Which response do you find more preferable?",
+                cls="text-sm text-gray-600 mb-4",
+            ),
+            Form(
+                Div(
+                    # Radio button for Model A
+                    Div(
+                        Input(
+                            type="radio",
+                            id="model_a",
+                            name="preference",
+                            value="model_a",
+                            required=True,
+                            cls="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-600",
+                        ),
+                        Label(
+                            "Model A",
+                            for_="model_a",
+                            cls="ml-2 text-sm font-medium text-gray-900",
+                        ),
+                        cls="flex items-center",
+                    ),
+                    # Radio button for Model B
+                    Div(
+                        Input(
+                            type="radio",
+                            id="model_b",
+                            name="preference",
+                            value="model_b",
+                            required=True,
+                            cls="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-600",
+                        ),
+                        Label(
+                            "Model B",
+                            for_="model_b",
+                            cls="ml-2 text-sm font-medium text-gray-900",
+                        ),
+                        cls="flex items-center mt-2",
+                    ),
+                    cls="space-y-2 mb-4",
+                ),
+                Button(
+                    "Submit Preference",
+                    type="submit",
+                    cls="w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2",
+                ),
+                hx_post=f"/submit_preference/{record['idx']}/{record['call_id']}",
+                hx_target="#main-content",
+                cls="mt-4",
+            ),
+            cls="mt-8 border-t border-gray-200 pt-6",
         ),
         cls="p-6 max-w-6xl mx-auto",
     )
