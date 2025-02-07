@@ -342,6 +342,11 @@ def create_annotation_page(record: dict[str, Any]):
                 cls="text-sm text-gray-600 mb-4",
             ),
             Form(
+                Input(
+                    type="hidden",
+                    name="swapped",
+                    value=str(record["swapped"]),
+                ),
                 Div(
                     # Radio button for Model A
                     Div(

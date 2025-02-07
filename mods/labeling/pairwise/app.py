@@ -1,3 +1,4 @@
+import random
 from typing import Sized
 
 import weave
@@ -6,10 +7,11 @@ from fasthtml.common import Div, Link, Meta, P, Request, Script, fast_app, serve
 from llm_ops import run_llms_pairwise
 from starlette.datastructures import FormData
 from utils import parse_file, validate_apis
+from weave.trace.weave_client import WeaveClient
 
 WS_DATA: Sized | None = None
 MODELS_DICT: dict | None = None
-WEAVE_CLIENT = None
+WEAVE_CLIENT: WeaveClient | None = None
 app, rt = fast_app(
     # live=True,
     pico=True,
@@ -76,27 +78,37 @@ async def post(request: Request):
 
 @rt("/annotate/{idx}")
 async def get_annotation(idx: int):
-    # Get the current dataset from weave
     try:
-        # Get the most recent dataset
         rows = WS_DATA
-        # Convert string idx to int and validate
         idx = int(idx)
         if idx < 0 or idx >= len(rows):
             return "Invalid index"
         prompt = rows[idx].get("prompt")
+
         response_dict, call = await run_llms_pairwise.call(
             model_a=MODELS_DICT["model_a"],
             model_b=MODELS_DICT["model_b"],
             prompt=prompt,
         )
+
+        # Randomly decide whether to swap the responses
+        should_swap = random.choice([True, False])
+        if should_swap:
+            display_responses = {
+                "response_a": response_dict["response_b"],
+                "response_b": response_dict["response_a"],
+            }
+        else:
+            display_responses = response_dict
+
         record = {
             "idx": idx,
             "total_length": len(rows),
             "prompt": prompt,
-            "response_a": response_dict["response_a"],
-            "response_b": response_dict["response_b"],
+            "response_a": display_responses["response_a"],
+            "response_b": display_responses["response_b"],
             "call_id": call.id,
+            "swapped": should_swap,  # Add swap information to record
         }
         return create_annotation_page(record)
     except Exception as e:
@@ -109,16 +121,20 @@ async def submit_preference(request: Request, idx: int, call_id: str):
     try:
         form_data = await request.form()
         preference = form_data.get("preference")
-        print(f"call_id: {call_id}")
+        was_swapped = form_data.get("swapped") == "True"  # Get swap info from form
+        print(f"form_data_swapped: {form_data.get('swapped')}")
+        print(f"was_swapped: {was_swapped}")
+        # Adjust the preference based on whether responses were swapped
+        if was_swapped:
+            actual_preference = "model_b" if preference == "model_a" else "model_a"
+        else:
+            actual_preference = preference
+
         call = WEAVE_CLIENT.get_call(call_id)
-        # Save the preference (implement your saving logic here)
-        # For example, you might want to save to a new Weave dataset
-        # or update the existing one
         call.feedback.add(
-            "preference", {"model": MODELS_DICT.get(preference, {}).get("model")}
+            "preference", {"model": MODELS_DICT.get(actual_preference, {}).get("model")}
         )
 
-        # Move to the next sample if available
         next_idx = idx + 1
         if next_idx < len(WS_DATA):
             return await get_annotation(next_idx)
