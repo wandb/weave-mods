@@ -2,8 +2,20 @@ import random
 from typing import Sized
 
 import weave
+
+
 from components import create_annotation_page, create_layout
-from fasthtml.common import Div, Link, Meta, P, Request, Script, fast_app, serve
+from fasthtml.common import (
+    Div,
+    Link,
+    Meta,
+    P,
+    Request,
+    Script,
+    fast_app,
+    serve,
+    MarkdownJS,
+)
 from llm_ops import run_llms_pairwise
 from starlette.datastructures import FormData
 from utils import parse_file, validate_apis
@@ -26,6 +38,7 @@ app, rt = fast_app(
             rel="stylesheet",
             href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@300;400;500;600&display=swap",
         ),
+        MarkdownJS(),
     ),
 )
 

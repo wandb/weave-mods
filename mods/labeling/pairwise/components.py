@@ -279,7 +279,9 @@ def create_annotation_page(record: dict[str, Any]):
                     hx_get=f"/annotate/{record['idx'] - 1}",
                     hx_target="#main-content",
                     hx_swap="innerHTML",
-                    cls="relative inline-flex items-center rounded-l-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+                    cls="relative inline-flex items-center rounded-l-md bg-indigo-600 px-3 py-2 text-sm font-semibold "
+                    "text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 "
+                    "focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
                     + (" pointer-events-none opacity-50" if record["idx"] == 0 else ""),
                 ),
                 # Next Button
@@ -289,7 +291,9 @@ def create_annotation_page(record: dict[str, Any]):
                     hx_get=f"/annotate/{record['idx'] + 1}",
                     hx_target="#main-content",
                     hx_swap="innerHTML",
-                    cls="relative -ml-px inline-flex items-center rounded-r-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+                    cls="relative -ml-px inline-flex items-center rounded-r-md bg-indigo-600 px-3 py-2 text-sm "
+                    "font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline "
+                    "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
                     + (
                         " pointer-events-none opacity-50"
                         if record["idx"] == record["total_length"] - 1
@@ -305,7 +309,7 @@ def create_annotation_page(record: dict[str, Any]):
             H3("Prompt", cls="text-lg font-semibold mb-2"),
             Textarea(
                 record["prompt"],
-                readonly=True,
+                readonly=False,
                 cls="w-full p-4 border border-gray-300 rounded-md mb-6 min-h-[100px] bg-gray-50",
             ),
         ),
