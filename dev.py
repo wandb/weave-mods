@@ -364,6 +364,8 @@ def dev(directory: Annotated[str, typer.Argument()] = "."):
 @app.command()
 def create(directory: Annotated[str, typer.Argument()] = "."):
     """Create a new mod."""
+    # Let's normalize mod names on dashes
+    directory = directory.replace("_", "-")
     if "mods/" not in directory:
         directory = os.path.join("mods", directory)
     # Check if directory exists, if not, create it
