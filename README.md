@@ -2,6 +2,9 @@
 
 A way to customize and enhance your GenAI dashboards.
 
+> [!Note]
+> This project is currently intended for use by W&B employee's.  While we are open to PR's suggesting enhanced functionality from third parties, ultimately there will likely be a different interface for third party mods.
+
 ## Getting Started
 
 ### Prerequisites
@@ -21,7 +24,8 @@ Once installed, run the following to install pre-commit hooks and pull the lates
 ./dev.py mods/demo
 ```
 
-> NOTE: ensure you're logged into wandb and you'll likely want to set the WANDB_PROJECT env var to a project with existing weave trace data.
+> [!Important]
+> Ensure you're logged into wandb and you'll likely want to set the WANDB_PROJECT env var to a project with existing weave trace data.
 
 ### Create your own mod!
 
