@@ -4,11 +4,7 @@ version = "0.1.0"
 description = "Test different types of guardrails for your LLM application"
 readme = "README.md"
 requires-python = ">=3.12"
-dependencies = [
-    "safeguards>=0.0.6",
-    "streamlit>=1.41.1",
-    "torch>=2.5.1",
-]
+dependencies = ["safeguards>=0.0.6", "streamlit>=1.41.1", "torch>=2.5.1"]
 
 [dependency-groups]
 dev = ["mods"]

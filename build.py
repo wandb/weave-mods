@@ -273,9 +273,47 @@ def build(
             typer.secho(
                 "Manifest can not be updated for a single mod.", fg=typer.colors.RED
             )
+            raise typer.Exit(code=1)
+
+        mod_lookup = {mc.name: mc.model_dump() for mc in mod_configs}
+
+        with open("featured.toml", "r") as f:
+            featured_config = toml.load(f)
+
+        featured_manifest = {}
+        featured_count = 0
+        for section, content in featured_config.items():
+            if "mods" in content:
+                for mod_id in content["mods"]:
+                    if mod_id not in mod_lookup:
+                        typer.secho(
+                            f"Mod {mod_id} not found in manifest.json",
+                            fg=typer.colors.RED,
+                        )
+                        raise typer.Exit(code=1)
+                featured_manifest[section] = [
+                    mod_lookup[mod_id]
+                    for mod_id in content["mods"]
+                    if mod_id in mod_lookup
+                ]
+                featured_count += len(featured_manifest[section])
+
+        if featured_count == 0:
+            typer.secho(
+                "No featured mods found, check the format of featured.toml",
+                fg=typer.colors.RED,
+            )
+            raise typer.Exit(code=1)
+
+        with open("featured-mods.json", "w") as f:
+            json.dump(featured_manifest, f, indent=4)
+            f.write("\n")
+
+        log.print(f"Wrote {featured_count} mods to featured-mods.json", style="green")
+
         with open("manifest.json", "w") as f:
             json.dump(
-                {mc.name: mc.model_dump() for mc in mod_configs},
+                mod_lookup,
                 f,
                 indent=4,
             )

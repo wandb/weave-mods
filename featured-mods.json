@@ -1,0 +1,98 @@
+{
+    "Playgrounds": [
+        {
+            "name": "guardrails-playground",
+            "classifiers": [],
+            "entrypoint": [
+                "streamlit",
+                "run",
+                "/app/src/Overview.py",
+                "--server.port=6637",
+                "--server.address=0.0.0.0",
+                "--server.enableCORS=false",
+                "--server.enableXsrfProtection=false",
+                "--client.toolbarMode=minimal"
+            ],
+            "description": "Test different types of guardrails for your LLM application",
+            "version": "0.1.0",
+            "secrets": [
+                "OPENAI_API_KEY",
+                "WANDB_API_KEY"
+            ]
+        }
+    ],
+    "Analysis": [
+        {
+            "name": "embedding-classifier",
+            "classifiers": [],
+            "entrypoint": [
+                "streamlit",
+                "run",
+                "/app/src/Overview.py",
+                "--server.port=6637",
+                "--server.address=0.0.0.0",
+                "--server.enableCORS=false",
+                "--server.enableXsrfProtection=false",
+                "--client.toolbarMode=minimal"
+            ],
+            "description": "A tool to classify and cluster weave trace data",
+            "version": "0.1.0",
+            "secrets": [
+                "OPENAI_API_KEY",
+                "WANDB_API_KEY"
+            ]
+        },
+        {
+            "name": "dashboard",
+            "classifiers": [],
+            "entrypoint": [
+                "streamlit",
+                "run",
+                "/app/src/Overview.py",
+                "--server.port=6637",
+                "--server.address=0.0.0.0",
+                "--server.enableCORS=false",
+                "--server.enableXsrfProtection=false",
+                "--client.toolbarMode=minimal"
+            ],
+            "description": "A dashboard for exploring your weave data",
+            "version": "0.1.0",
+            "secrets": [
+                "WANDB_API_KEY"
+            ]
+        }
+    ],
+    "Demos": [
+        {
+            "name": "demo",
+            "classifiers": [],
+            "entrypoint": [
+                "streamlit",
+                "run",
+                "/app/src/app.py",
+                "--server.port=6637",
+                "--server.address=0.0.0.0",
+                "--server.enableCORS=false",
+                "--server.enableXsrfProtection=false",
+                "--client.toolbarMode=minimal"
+            ],
+            "description": "A demo of using helpers from the weave mods sdk",
+            "version": "0.1.0",
+            "secrets": []
+        },
+        {
+            "name": "together-ft",
+            "classifiers": [],
+            "entrypoint": [
+                "Overview.py"
+            ],
+            "description": "Finetune a model with together AI",
+            "version": "0.1.0",
+            "secrets": [
+                "TOGETHER_API_KEY",
+                "WANDB_API_KEY",
+                "OPENAI_API_KEY"
+            ]
+        }
+    ]
+}
