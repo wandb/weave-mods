@@ -1,0 +1,8 @@
+[Playgrounds]
+mods = ["guardrails-playground"]
+
+[Analysis]
+mods = ["embedding-classifier", "dashboard"]
+
+[Demos]
+mods = ["demo", "together-ft"]

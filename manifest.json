@@ -62,8 +62,8 @@
             "WANDB_API_KEY"
         ]
     },
-    "guardrails_playground": {
-        "name": "guardrails_playground",
+    "guardrails-playground": {
+        "name": "guardrails-playground",
         "classifiers": [],
         "entrypoint": [
             "streamlit",
