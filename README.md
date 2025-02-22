@@ -3,7 +3,7 @@
 A way to customize and enhance your GenAI dashboards.
 
 > [!Note]
-> This project is currently intended for use by W&B employee's.  While we are open to PR's suggesting enhanced functionality from third parties, ultimately there will likely be a different interface for third party mods.
+> This project is currently intended for use by W&B employees.  While we are open to third party PRs suggesting enhanced functionality, ultimately there will be a different interface for third party mods.
 
 ## Getting Started
 
