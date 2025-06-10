@@ -111,10 +111,13 @@ def setup():
         cwd=os.path.join(Path(__file__).parent, "sdk"),
         check=True,
     )
+    repo_venv = os.path.join(Path(__file__).parent, ".venv")
+    sdk_venv = os.path.join(Path(__file__).parent, "sdk", ".venv")
+    if not os.path.exists(repo_venv):
+        os.symlink(sdk_venv, repo_venv, target_is_directory=True)
     console.print("Installing pre-commit hooks", style="blue")
     subprocess.run(
         ["uv", "run", "pre-commit", "install"],
-        cwd=os.path.join(Path(__file__).parent, "mods"),
         check=True,
     )
     console.print("Pulling latest dev image", style="blue")
@@ -122,10 +125,6 @@ def setup():
         ["docker", "pull", "ghcr.io/wandb/weave-mods/dev"],
         check=True,
     )
-    repo_venv = os.path.join(Path(__file__).parent, ".venv")
-    sdk_venv = os.path.join(Path(__file__).parent, "sdk", ".venv")
-    if not os.path.exists(repo_venv):
-        os.symlink(sdk_venv, repo_venv, target_is_directory=True)
     host, key = host_and_key()
     print_setup_info(console, host, key)
 
