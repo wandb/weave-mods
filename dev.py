@@ -107,7 +107,9 @@ def setup():
     console = Console(stderr=True)
     console.print("Syncing SDK...", style="blue")
     subprocess.run(
-        ["uv", "sync"], cwd=os.path.join(Path(__file__).parent, "sdk"), check=True
+        ["uv", "sync", "--frozen", "--dev"],
+        cwd=os.path.join(Path(__file__).parent, "sdk"),
+        check=True,
     )
     console.print("Installing pre-commit hooks", style="blue")
     subprocess.run(
