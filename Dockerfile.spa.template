@@ -1,0 +1,9 @@
+FROM denoland/deno:alpine
+WORKDIR /app
+
+COPY dist ./dist
+COPY deno_server.ts ./server.ts
+
+EXPOSE 6637 6638
+
+CMD ["deno", "run", "--allow-net", "--allow-env", "server.ts"]
