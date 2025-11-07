@@ -49,7 +49,7 @@ FLAVORS = {
         "--server.enableXsrfProtection=false",
         "--client.toolbarMode=minimal",
     ],
-    "marimo": ["marimo", "run", "--port=6637", "--host=0.0.0.0", "/app/src/app.py"],
+    "marimo": ["python", "/app/src/marimo-entrypoint.py"],
 }
 
 
@@ -199,6 +199,13 @@ def build(
 
             # Copy healthcheck.py to the mod directory
             shutil.copy(healthcheck, dir_path)
+
+            # For marimo flavor, also copy the entrypoint wrapper
+            if mod_config.entrypoint[0] == "marimo":
+                marimo_entrypoint = (
+                    Path(__file__).parent / "mods" / "marimo-entrypoint.py"
+                )
+                shutil.copy(marimo_entrypoint, dir_path)
 
             # Build the Docker image
             docker_tags = [
