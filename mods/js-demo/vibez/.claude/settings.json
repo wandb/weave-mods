@@ -1,0 +1,10 @@
+{
+  "apiKeyHelper": "/app/api-key.sh",
+  "permissions": {
+    "allow": ["Read", "Edit", "Write", "Bash", "Run"],
+    "deny": []
+  },
+  "env": {
+    "OTEL_METRICS_EXPORTER": "otlp"
+  }
+}

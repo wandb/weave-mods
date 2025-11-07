@@ -1,0 +1,21 @@
+{
+  "name": "js-demo",
+  "version": "0.1.0",
+  "description": "A demo JavaScript mod",
+  "scripts": {
+    "build-static": "mkdir -p static && cp index.html static/index.html"
+  },
+  "dependencies": {
+    "@anthropic-ai/claude-code": "^1.0.21"
+  },
+  "weave": {
+    "mod": {
+      "flavor": "spa",
+      "secrets": [
+        "WANDB_API_KEY",
+        "ANTHROPIC_API_KEY"
+      ],
+      "staticDir": "static"
+    }
+  }
+}

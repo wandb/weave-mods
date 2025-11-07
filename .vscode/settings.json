@@ -15,7 +15,7 @@
     "editor.tabSize": 4
   },
   "[dockerfile]": {
-    "editor.defaultFormatter": "ms-azuretools.vscode-docker",
+    "editor.defaultFormatter": "foxundermoon.shell-format",
     "editor.formatOnSave": true
   },
   "[github-actions-workflow]": {
@@ -56,5 +56,10 @@
     "editor.formatOnSave": true,
     "editor.insertSpaces": true,
     "editor.tabSize": 2
-  }
+  },
+  "deno.enable": true,
+  "deno.lint": true,
+  "deno.unstable": false,
+  "typescript.suggest.autoImports": false,
+  "typescript.preferences.includePackageJsonAutoImports": "off"
 }

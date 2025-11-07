@@ -15,7 +15,7 @@ import subprocess
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Annotated, Dict, List, Optional
+from typing import Annotated, Dict, List, Optional, Set
 
 import toml
 import typer
@@ -37,6 +37,10 @@ else:
 REGISTRY = os.getenv("REGISTRY", REGISTRY)
 
 app = typer.Typer()
+
+# Default package manager for JavaScript mods. Can be overridden with the
+# JS_PACKAGE_MANAGER environment variable.
+JS_PACKAGE_MANAGER = os.getenv("JS_PACKAGE_MANAGER", "deno")
 
 FLAVORS = {
     "streamlit": [
@@ -67,6 +71,24 @@ class DockerConfig(BaseModel):
     dockerfile: str
     tags: List[str]
     labels: Dict[str, str]
+
+
+def details_from_package(package_path: Path) -> ModConfig:
+    with open(package_path, "r") as f:
+        package = json.load(f)
+    config = package.get("weave", {}).get("mod", {})
+    secrets = config.get("secrets", [])
+    description = package.get("description", "A Weave Mod")
+    version = package.get("version", "0.1.0")
+    name = package.get("name", package_path.parent.name)
+    return ModConfig(
+        name=name,
+        classifiers=[],
+        entrypoint=[],
+        description=description,
+        version=version,
+        secrets=secrets,
+    )
 
 
 def details_from_config(pyproject_path: Path) -> dict:
@@ -142,28 +164,39 @@ def build(
     ),
 ):
     template_path = Path(__file__).parent / "Dockerfile.template"
+    js_template_path = Path(__file__).parent / "Dockerfile.spa.template"
+    deno_server = Path(__file__).parent / "mods" / "deno_server.ts"
     git_sha = exec_read("git rev-parse HEAD")
     mod_configs: List[ModConfig] = []
     if build is None:
         build = "localhost:" in REGISTRY
-    # If no directories specified, build all
+    # If no directories specified, build all pyproject or package.json dirs
     if not directories:
-        directories = [
+        dirs: Set[str] = set(
             str(p.parent)
             for p in Path(root).rglob("pyproject.toml")
             if ".venv" not in p.parts
-        ]
+        )
+        dirs.update(
+            str(p.parent)
+            for p in Path(root).rglob("package.json")
+            if "node_modules" not in p.parts
+        )
+        directories = sorted(list(dirs))
 
     mod_configs = []
     build_configs = []
     healthcheck = Path(__file__).parent / "mods" / "healthcheck.py"
-    # Loop over all directories containing 'pyproject.toml' under 'mods/'
+    # Loop over all directories containing configuration
     for dir_str in directories:
         dir_path = Path(dir_str)
         pyproject = dir_path / "pyproject.toml"
-        if not pyproject.exists():
+        package_json = dir_path / "package.json"
+        is_python = pyproject.exists()
+        is_js = package_json.exists()
+        if not is_python and not is_js:
             log.print(
-                f"Skipping directory: {dir_path} (no pyproject.toml)",
+                f"Skipping directory: {dir_path} (no config)",
                 style="yellow",
             )
             continue
@@ -174,31 +207,45 @@ def build(
         healthcheck_path = dir_path / "healthcheck.py"
         try:
             if upgrade:
-                log.print("Upgrading dependencies...", style="yellow")
-                subprocess.run(["uv", "lock", "--upgrade"], cwd=dir_path, check=True)
+                if is_python:
+                    log.print("Upgrading dependencies...", style="yellow")
+                    subprocess.run(
+                        ["uv", "lock", "--upgrade"], cwd=dir_path, check=True
+                    )
 
-            # Create '.dockerignore' with '.venv' content
-            with dockerignore_path.open("w") as f:
-                f.write(".venv\n")
+            if is_python:
+                with dockerignore_path.open("w") as f:
+                    f.write(".venv\n")
 
-            with template_path.open("r") as f:
-                template_content = f.read()
+                with template_path.open("r") as f:
+                    template_content = f.read()
 
-            # Replace '$$MOD_ENTRYPOINT$$' with '["python", "app.py"]'
-            mod_config = details_from_config(pyproject)
-            new_content = template_content.replace(
-                "$$MOD_ENTRYPOINT",
-                " ".join(
-                    ["python", "/app/src/healthcheck.py", "&"] + mod_config.entrypoint
-                ),
-            )
+                mod_config = details_from_config(pyproject)
+                new_content = template_content.replace(
+                    "$$MOD_ENTRYPOINT",
+                    " ".join(
+                        ["python", "/app/src/healthcheck.py", "&"]
+                        + mod_config.entrypoint
+                    ),
+                )
 
-            # Write the new Dockerfile
-            with dockerfile_path.open("w") as f:
-                f.write(new_content)
+                with dockerfile_path.open("w") as f:
+                    f.write(new_content)
 
-            # Copy healthcheck.py to the mod directory
-            shutil.copy(healthcheck, dir_path)
+                shutil.copy(healthcheck, dir_path)
+            else:
+                with dockerignore_path.open("w") as f:
+                    f.write("node_modules\n")
+
+                with js_template_path.open("r") as f:
+                    template_content = f.read()
+
+                mod_config = details_from_package(package_json)
+
+                shutil.copy(deno_server, dir_path)
+
+                with dockerfile_path.open("w") as f:
+                    f.write(template_content)
 
             # Build the Docker image
             docker_tags = [
@@ -219,10 +266,14 @@ def build(
                 "org.opencontainers.image.version": mod_config.version,
             }
 
-            # Construct label arguments for the docker build command
+            # Construct label arguments for the docker build command when not localhost
             label_args = []
             for key, value in labels.items():
                 label_args.extend(["--label", f"{key}={value}"])
+
+            # No multi-arch for dev
+            if env == "dev":
+                platform = "linux/arm64"
 
             if build:
                 subprocess.run(
@@ -261,9 +312,12 @@ def build(
         finally:
             # Clean up '.dockerignore' and 'Dockerfile' only if we built locally
             if build:
-                healthcheck_path.unlink(missing_ok=True)
+                if is_python:
+                    healthcheck_path.unlink(missing_ok=True)
                 dockerignore_path.unlink(missing_ok=True)
                 dockerfile_path.unlink(missing_ok=True)
+                if is_js:
+                    (dir_path / deno_server.name).unlink(missing_ok=True)
     log.print(
         f"{'Built' if build else 'Wrote'} {len(mod_configs)} mods {'to the manifest' if manifest else ''}",
         style="green",
@@ -306,7 +360,7 @@ def build(
             raise typer.Exit(code=1)
 
         with open("featured-mods.json", "w") as f:
-            json.dump(featured_manifest, f, indent=4)
+            json.dump(featured_manifest, f, indent=4, sort_keys=True)
             f.write("\n")
 
         log.print(f"Wrote {featured_count} mods to featured-mods.json", style="green")
@@ -316,6 +370,7 @@ def build(
                 mod_lookup,
                 f,
                 indent=4,
+                sort_keys=True,
             )
             f.write("\n")
     else:
