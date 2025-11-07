@@ -107,6 +107,18 @@
         ],
         "flavor": "streamlit"
     },
+    "marimo": {
+        "name": "marimo",
+        "classifiers": [],
+        "entrypoint": [
+            "python",
+            "/app/src/marimo-entrypoint.py"
+        ],
+        "description": "Example marimo mod demonstrating edit and publish modes",
+        "version": "0.1.0",
+        "secrets": [],
+        "flavor": "marimo"
+    },
     "anamolyzer": {
         "name": "anamolyzer",
         "classifiers": [],
