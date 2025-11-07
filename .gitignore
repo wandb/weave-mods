@@ -1,5 +1,6 @@
 .venv/
 .venv
+.worktrees/
 .DS_Store
 wandb/
 __pycache__/
