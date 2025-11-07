@@ -252,12 +252,15 @@ async def main():
             "--client.toolbarMode=developer",
         ]
     elif flavor == "marimo":
+        # Support MARIMO_MODE environment variable for edit/publish switching
+        mode = os.getenv("MARIMO_MODE", "edit").lower()
+        command = "run" if mode == "publish" else "edit"
         args = [
             "uv",
             "run",
             "--no-project",
             "marimo",
-            "run",
+            command,
             "--port=" + os.getenv("PORT"),
             "--host=0.0.0.0",
             *entrypoint,
