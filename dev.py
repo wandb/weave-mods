@@ -249,9 +249,9 @@ def dev(directory: Annotated[str, typer.Argument()] = "."):
             sys.exit(1)
         # Check flavor
         flavor = weave_config.get("flavor", "")
-        if flavor not in ["streamlit", "fasthtml", "uvicorn", "custom"]:
+        if flavor not in ["streamlit", "fasthtml", "uvicorn", "custom", "marimo"]:
             typer.secho(
-                "Flavor not one of streamlit, fasthtml, uvicorn, custom; nothing to do.",
+                "Flavor not one of streamlit, fasthtml, uvicorn, custom, marimo; nothing to do.",
                 fg=typer.colors.YELLOW,
             )
             sys.exit(1)
