@@ -7,6 +7,8 @@ __pycache__/
 mods/**/.dockerignore
 mods/**/Dockerfile
 mods/**/healthcheck.py
+mods/**/marimo-entrypoint.py
 mods/health.log
 !mods/healthcheck.py
+!mods/marimo-entrypoint.py
 build_output.json
