@@ -60,6 +60,7 @@ class ModConfig(BaseModel):
     description: str
     version: str
     secrets: List[str]
+    flavor: str
 
 
 class DockerConfig(BaseModel):
@@ -98,6 +99,7 @@ def details_from_config(pyproject_path: Path) -> dict:
         description=description,
         version=version,
         secrets=secrets,
+        flavor=flavor,
     )
 
 
@@ -201,7 +203,7 @@ def build(
             shutil.copy(healthcheck, dir_path)
 
             # For marimo flavor, also copy the entrypoint wrapper
-            if mod_config.entrypoint[0] == "marimo":
+            if mod_config.flavor == "marimo":
                 marimo_entrypoint = (
                     Path(__file__).parent / "mods" / "marimo-entrypoint.py"
                 )
@@ -271,6 +273,8 @@ def build(
                 healthcheck_path.unlink(missing_ok=True)
                 dockerignore_path.unlink(missing_ok=True)
                 dockerfile_path.unlink(missing_ok=True)
+                marimo_entrypoint_path = dir_path / "marimo-entrypoint.py"
+                marimo_entrypoint_path.unlink(missing_ok=True)
     log.print(
         f"{'Built' if build else 'Wrote'} {len(mod_configs)} mods {'to the manifest' if manifest else ''}",
         style="green",

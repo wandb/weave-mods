@@ -18,7 +18,8 @@
             "secrets": [
                 "OPENAI_API_KEY",
                 "WANDB_API_KEY"
-            ]
+            ],
+            "flavor": "streamlit"
         }
     ],
     "Analysis": [
@@ -40,7 +41,8 @@
             "secrets": [
                 "OPENAI_API_KEY",
                 "WANDB_API_KEY"
-            ]
+            ],
+            "flavor": "streamlit"
         },
         {
             "name": "dashboard",
@@ -59,7 +61,8 @@
             "version": "0.1.0",
             "secrets": [
                 "WANDB_API_KEY"
-            ]
+            ],
+            "flavor": "streamlit"
         }
     ],
     "Demos": [
@@ -78,7 +81,8 @@
             ],
             "description": "A demo of using helpers from the weave mods sdk",
             "version": "0.1.0",
-            "secrets": []
+            "secrets": [],
+            "flavor": "streamlit"
         },
         {
             "name": "together-ft",
@@ -92,7 +96,8 @@
                 "TOGETHER_API_KEY",
                 "WANDB_API_KEY",
                 "OPENAI_API_KEY"
-            ]
+            ],
+            "flavor": "streamlit"
         }
     ]
 }
