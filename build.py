@@ -40,7 +40,7 @@ app = typer.Typer()
 
 # Default package manager for JavaScript mods. Can be overridden with the
 # JS_PACKAGE_MANAGER environment variable.
-JS_PACKAGE_MANAGER = os.getenv("JS_PACKAGE_MANAGER", "pnpm")
+JS_PACKAGE_MANAGER = os.getenv("JS_PACKAGE_MANAGER", "deno")
 
 FLAVORS = {
     "streamlit": [
@@ -165,7 +165,7 @@ def build(
 ):
     template_path = Path(__file__).parent / "Dockerfile.template"
     js_template_path = Path(__file__).parent / "Dockerfile.spa.template"
-    deno_server = Path(__file__).parent / "deno_server.ts"
+    deno_server = Path(__file__).parent / "mods" / "deno_server.ts"
     git_sha = exec_read("git rev-parse HEAD")
     mod_configs: List[ModConfig] = []
     if build is None:
@@ -182,7 +182,7 @@ def build(
             for p in Path(root).rglob("package.json")
             if "node_modules" not in p.parts
         )
-        directories = list(dirs)
+        directories = sorted(list(dirs))
 
     mod_configs = []
     build_configs = []
@@ -209,7 +209,9 @@ def build(
             if upgrade:
                 if is_python:
                     log.print("Upgrading dependencies...", style="yellow")
-                    subprocess.run(["uv", "lock", "--upgrade"], cwd=dir_path, check=True)
+                    subprocess.run(
+                        ["uv", "lock", "--upgrade"], cwd=dir_path, check=True
+                    )
 
             if is_python:
                 with dockerignore_path.open("w") as f:
@@ -221,7 +223,10 @@ def build(
                 mod_config = details_from_config(pyproject)
                 new_content = template_content.replace(
                     "$$MOD_ENTRYPOINT",
-                    " ".join(["python", "/app/src/healthcheck.py", "&"] + mod_config.entrypoint),
+                    " ".join(
+                        ["python", "/app/src/healthcheck.py", "&"]
+                        + mod_config.entrypoint
+                    ),
                 )
 
                 with dockerfile_path.open("w") as f:
@@ -231,10 +236,6 @@ def build(
             else:
                 with dockerignore_path.open("w") as f:
                     f.write("node_modules\n")
-
-                if build:
-                    subprocess.run([JS_PACKAGE_MANAGER, "install"], cwd=dir_path, check=True)
-                    subprocess.run([JS_PACKAGE_MANAGER, "run", "build"], cwd=dir_path, check=True)
 
                 with js_template_path.open("r") as f:
                     template_content = f.read()
@@ -265,10 +266,14 @@ def build(
                 "org.opencontainers.image.version": mod_config.version,
             }
 
-            # Construct label arguments for the docker build command
+            # Construct label arguments for the docker build command when not localhost
             label_args = []
             for key, value in labels.items():
                 label_args.extend(["--label", f"{key}={value}"])
+
+            # No multi-arch for dev
+            if env == "dev":
+                platform = "linux/arm64"
 
             if build:
                 subprocess.run(
@@ -355,7 +360,7 @@ def build(
             raise typer.Exit(code=1)
 
         with open("featured-mods.json", "w") as f:
-            json.dump(featured_manifest, f, indent=4)
+            json.dump(featured_manifest, f, indent=4, sort_keys=True)
             f.write("\n")
 
         log.print(f"Wrote {featured_count} mods to featured-mods.json", style="green")
@@ -365,6 +370,7 @@ def build(
                 mod_lookup,
                 f,
                 indent=4,
+                sort_keys=True,
             )
             f.write("\n")
     else:

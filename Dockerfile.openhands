@@ -1,0 +1,42 @@
+FROM localhost:5001/mods/openhands-base:latest
+
+# Setup openhands user and let the sudo
+RUN groupadd -g 999 openhands \
+    && useradd -rm -d /home/openhands -s /bin/bash -g root -G openhands -G sudo -u 999 openhands \
+    && echo 'openhands ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers \
+    && passwd -d openhands  # Remove password for openhands user
+
+# TODO: figure out uid/gid for openhands user
+COPY --chown=999:0 sdk/ /workspace/sdk
+COPY --chown=999:0 build.py /workspace/sdk/build.py
+COPY --chown=999:0 Dockerfile.template /workspace/sdk/Dockerfile.template
+COPY --chown=999:0 mods/healthcheck.py /workspace/sdk/mods/healthcheck.py
+COPY --chown=999:0 mods/demo/ /workspace/sdk/mods/demo
+COPY --chown=999:0 mods/openhands/repo.md /workspace/.openhands/microagents/repo.md
+# Patches
+COPY --chown=999:0 mods/openhands/patches/action_execution_server.py /openhands/code/openhands/runtime/action_execution_server.py
+
+RUN mkdir -p /home/openhands/.cache/uv \
+    && cp -r /root/.cache/ms-playwright /home/openhands/.cache/ms-playwright \
+    && chown -R 999:0 /home/openhands \
+    && chown -R 999:0 /openhands/code/ \
+    && echo 'alias mods="/workspace/sdk/build.py"' >> /root/.bashrc
+
+# ENV PATH="/home/openhands/.depot/bin:$PATH"
+
+# COPY --from=localhost:5001/mods/oh-runtime:depot /home/openhands/.depot/bin /home/openhands/.depot/bin
+
+USER 999
+#  curl -L https://depot.dev/install-cli.sh | sh && \
+RUN --mount=type=cache,uid=999,gid=0,target=/home/openhands/.cache/uv cd /workspace && \
+    uv venv && \
+    uv init && \
+    # uv add streamlit weave && \
+    uv add --editable /workspace/sdk && \
+    rm hello.py && \
+    /workspace/sdk/build.py --help && \
+    git config --global --add safe.directory /workspace && \
+    echo 'import streamlit as st\n\nst.title("Welcome to Weave Mods!")' > app.py && \
+    echo '*.pyc\n.venv\n__pycache__' > .gitignore && \
+    echo '\n[tool.weave.mod]\nflavor = "streamlit"\nsecrets = ["WANDB_API_KEY"]' >> pyproject.toml && \
+    echo 'alias mods="/workspace/sdk/build.py"' >> ~/.bashrc

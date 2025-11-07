@@ -1,7 +1,7 @@
 {
-    "demo": {
-        "name": "demo",
+    "anamolyzer": {
         "classifiers": [],
+        "description": "A tool for detecting anomalies in weave trace data",
         "entrypoint": [
             "streamlit",
             "run",
@@ -12,150 +12,169 @@
             "--server.enableXsrfProtection=false",
             "--client.toolbarMode=minimal"
         ],
+        "name": "anamolyzer",
+        "secrets": [],
+        "version": "0.1.0"
+    },
+    "dashboard": {
+        "classifiers": [],
+        "description": "A dashboard for exploring your weave data",
+        "entrypoint": [
+            "streamlit",
+            "run",
+            "/app/src/app.py",
+            "--server.port=6637",
+            "--server.address=0.0.0.0",
+            "--server.enableCORS=false",
+            "--server.enableXsrfProtection=false",
+            "--client.toolbarMode=minimal"
+        ],
+        "name": "dashboard",
+        "secrets": [
+            "WANDB_API_KEY"
+        ],
+        "version": "0.1.0"
+    },
+    "demo": {
+        "classifiers": [],
         "description": "A demo of using helpers from the weave mods sdk",
-        "version": "0.1.0",
-        "secrets": []
-    },
-    "playground": {
-        "name": "playground",
-        "classifiers": [],
         "entrypoint": [
-            "open-webui",
-            "serve",
-            "--port",
-            "6637"
+            "streamlit",
+            "run",
+            "/app/src/app.py",
+            "--server.port=6637",
+            "--server.address=0.0.0.0",
+            "--server.enableCORS=false",
+            "--server.enableXsrfProtection=false",
+            "--client.toolbarMode=minimal"
         ],
-        "description": "A chat playground",
-        "version": "0.1.0",
-        "secrets": [
-            "OPENAI_API_KEY"
-        ]
+        "name": "demo",
+        "secrets": [],
+        "version": "0.1.0"
     },
-    "together-ft": {
-        "name": "together-ft",
+    "embedding-classifier": {
         "classifiers": [],
+        "description": "A tool to classify and cluster weave trace data",
         "entrypoint": [
-            "Overview.py"
+            "streamlit",
+            "run",
+            "/app/src/app.py",
+            "--server.port=6637",
+            "--server.address=0.0.0.0",
+            "--server.enableCORS=false",
+            "--server.enableXsrfProtection=false",
+            "--client.toolbarMode=minimal"
         ],
-        "description": "Finetune a model with together AI",
-        "version": "0.1.0",
+        "name": "embedding-classifier",
         "secrets": [
-            "TOGETHER_API_KEY",
+            "OPENAI_API_KEY",
+            "WANDB_API_KEY"
+        ],
+        "version": "0.1.0"
+    },
+    "guardrails-playground": {
+        "classifiers": [],
+        "description": "Test different types of guardrails for your LLM application",
+        "entrypoint": [
+            "streamlit",
+            "run",
+            "/app/src/app.py",
+            "--server.port=6637",
+            "--server.address=0.0.0.0",
+            "--server.enableCORS=false",
+            "--server.enableXsrfProtection=false",
+            "--client.toolbarMode=minimal"
+        ],
+        "name": "guardrails-playground",
+        "secrets": [
+            "OPENAI_API_KEY",
+            "WANDB_API_KEY"
+        ],
+        "version": "0.1.0"
+    },
+    "html": {
+        "classifiers": [],
+        "description": "A sick HTML labeling tool",
+        "entrypoint": [
+            "streamlit",
+            "run",
+            "/app/src/app.py",
+            "--server.port=6637",
+            "--server.address=0.0.0.0",
+            "--server.enableCORS=false",
+            "--server.enableXsrfProtection=false",
+            "--client.toolbarMode=minimal"
+        ],
+        "name": "html",
+        "secrets": [
             "WANDB_API_KEY",
             "OPENAI_API_KEY"
-        ]
+        ],
+        "version": "0.1.0"
+    },
+    "js-demo": {
+        "classifiers": [],
+        "description": "A demo JavaScript mod",
+        "entrypoint": [],
+        "name": "js-demo",
+        "secrets": [
+            "WANDB_API_KEY",
+            "ANTHROPIC_API_KEY"
+        ],
+        "version": "0.1.0"
+    },
+    "jupyterlab-plotly": {
+        "classifiers": [],
+        "description": "The plotly Jupyter extension",
+        "entrypoint": [],
+        "name": "jupyterlab-plotly",
+        "secrets": [],
+        "version": "5.24.1"
     },
     "openui": {
-        "name": "openui",
         "classifiers": [],
+        "description": "OpenUI builds tailwindcss UI's for you",
         "entrypoint": [
             "python",
             "-m",
             "openui",
             "--litellm"
         ],
-        "description": "OpenUI builds tailwindcss UI's for you",
-        "version": "0.1.0",
+        "name": "openui",
         "secrets": [
             "OPENAI_API_KEY",
             "ANTHROPIC_API_KEY",
             "WANDB_API_KEY"
-        ]
-    },
-    "guardrails-playground": {
-        "name": "guardrails-playground",
-        "classifiers": [],
-        "entrypoint": [
-            "streamlit",
-            "run",
-            "/app/src/Overview.py",
-            "--server.port=6637",
-            "--server.address=0.0.0.0",
-            "--server.enableCORS=false",
-            "--server.enableXsrfProtection=false",
-            "--client.toolbarMode=minimal"
         ],
-        "description": "Test different types of guardrails for your LLM application",
-        "version": "0.1.0",
+        "version": "0.1.0"
+    },
+    "playground": {
+        "classifiers": [],
+        "description": "A chat playground",
+        "entrypoint": [
+            "open-webui",
+            "serve",
+            "--port",
+            "6637"
+        ],
+        "name": "playground",
         "secrets": [
-            "OPENAI_API_KEY",
-            "WANDB_API_KEY"
-        ]
-    },
-    "dashboard": {
-        "name": "dashboard",
-        "classifiers": [],
-        "entrypoint": [
-            "streamlit",
-            "run",
-            "/app/src/Overview.py",
-            "--server.port=6637",
-            "--server.address=0.0.0.0",
-            "--server.enableCORS=false",
-            "--server.enableXsrfProtection=false",
-            "--client.toolbarMode=minimal"
+            "OPENAI_API_KEY"
         ],
-        "description": "A dashboard for exploring your weave data",
-        "version": "0.1.0",
+        "version": "0.1.0"
+    },
+    "together-ft": {
+        "classifiers": [],
+        "description": "Finetune a model with together AI",
+        "entrypoint": [
+            "Overview.py"
+        ],
+        "name": "together-ft",
         "secrets": [
-            "WANDB_API_KEY"
-        ]
-    },
-    "anamolyzer": {
-        "name": "anamolyzer",
-        "classifiers": [],
-        "entrypoint": [
-            "streamlit",
-            "run",
-            "/app/src/Overview.py",
-            "--server.port=6637",
-            "--server.address=0.0.0.0",
-            "--server.enableCORS=false",
-            "--server.enableXsrfProtection=false",
-            "--client.toolbarMode=minimal"
-        ],
-        "description": "A tool for detecting anomalies in weave trace data",
-        "version": "0.1.0",
-        "secrets": []
-    },
-    "embedding-classifier": {
-        "name": "embedding-classifier",
-        "classifiers": [],
-        "entrypoint": [
-            "streamlit",
-            "run",
-            "/app/src/Overview.py",
-            "--server.port=6637",
-            "--server.address=0.0.0.0",
-            "--server.enableCORS=false",
-            "--server.enableXsrfProtection=false",
-            "--client.toolbarMode=minimal"
-        ],
-        "description": "A tool to classify and cluster weave trace data",
-        "version": "0.1.0",
-        "secrets": [
-            "OPENAI_API_KEY",
-            "WANDB_API_KEY"
-        ]
-    },
-    "html": {
-        "name": "html",
-        "classifiers": [],
-        "entrypoint": [
-            "streamlit",
-            "run",
-            "/app/src/Overview.py",
-            "--server.port=6637",
-            "--server.address=0.0.0.0",
-            "--server.enableCORS=false",
-            "--server.enableXsrfProtection=false",
-            "--client.toolbarMode=minimal"
-        ],
-        "description": "A sick HTML labeling tool",
-        "version": "0.1.0",
-        "secrets": [
+            "TOGETHER_API_KEY",
             "WANDB_API_KEY",
             "OPENAI_API_KEY"
-        ]
+        ],
+        "version": "0.1.0"
     }
 }

@@ -88,7 +88,7 @@ async def download_purl(url: str):
 
 
 def guess_entry_point(directory: Path) -> Optional[Path]:
-    entry_files = {"app.py", "main.py", "__main__.py"}
+    entry_files = {"app.py", "main.py", "__main__.py", "index.html"}
     other_files = set()
 
     for file in directory.iterdir():
@@ -112,7 +112,12 @@ def find_deps(directory: Path, entrypoint: Optional[Path] = None) -> Optional[Pa
                 for dep in deps["dependencies"]:
                     f.write(f"{dep}\n")
 
-    dep_files = {"requirements.in", "requirements.txt", "pyproject.toml"}
+    dep_files = {
+        "requirements.in",
+        "requirements.txt",
+        "pyproject.toml",
+        "package.json",
+    }
     for file in directory.iterdir():
         if file.is_file():
             if file.name in dep_files:
@@ -157,6 +162,13 @@ async def clone_git_repo(url: str, version: Optional[str] = None):
 
 async def install_deps(deps_file: Path):
     os.chdir("/app/src")
+    if deps_file.name == "package.json":
+        print(f"Installing dependencies from {deps_file}...")
+        process = await asyncio.create_subprocess_exec("deno", "install")
+        await process.wait()
+        process = await asyncio.create_subprocess_exec("deno", "run", "build")
+        await process.wait()
+        return
     # TODO: decide if we want to clear this out
     if not os.path.exists(".venv") or not os.listdir(".venv"):
         print("Creating new virtual environment...")
@@ -213,6 +225,8 @@ async def main():
                     entrypoint = weave_config["mod"]["entrypoint"]
                     if isinstance(entrypoint, str):
                         entrypoint = [entrypoint]
+            if deps_file == Path("/app/src/package.json"):
+                flavor = "spa"
             if isinstance(entrypoint, Path):
                 entrypoint = [str(entrypoint)]
             elif entrypoint is None:
@@ -237,6 +251,7 @@ async def main():
                 raise ValueError("Unable to determine mod flavor")
         else:
             raise ValueError("Unable to determine mod flavor")
+    command = "uv"
     if flavor == "streamlit":
         args = [
             "uv",
@@ -264,22 +279,36 @@ async def main():
         ]
     elif flavor == "fasthtml":
         args = ["uv", "run", "--no-project", *entrypoint]
+    elif flavor == "spa":
+        command = "deno"
+        args = [
+            "deno",
+            "run",
+            "--allow-net",
+            "--allow-env",
+            "--allow-run",
+            "--allow-read",
+            "--allow-write",
+            "--watch",
+            "/app/src/deno_server.ts",
+        ]
     elif flavor == "custom":
         args = ["uv", "run", "--no-project", *entrypoint]
     else:
         raise ValueError(f"Unsupported flavor: {flavor}")
-    print(f"Running {flavor} app from {os.getcwd()}: {" ".join(args)}")
-    # Start healthcheck.py in the background
-    health_log = open("/tmp/health.log", "w")
-    await asyncio.create_subprocess_exec(
-        "uv",
-        "run",
-        "--no-project",
-        "/mods/healthcheck.py",
-        stdout=health_log,
-        stderr=health_log,
-    )
-    os.execvp("uv", args)
+    print(f"Running {flavor} app from {os.getcwd()}: {' '.join(args)}")
+    if flavor != "spa":
+        # Start healthcheck.py in the background
+        health_log = open("/tmp/health.log", "w")
+        await asyncio.create_subprocess_exec(
+            "uv",
+            "run",
+            "--no-project",
+            "/mods/healthcheck.py",
+            stdout=health_log,
+            stderr=health_log,
+        )
+    os.execvp(command, args)
 
 
 if __name__ == "__main__":

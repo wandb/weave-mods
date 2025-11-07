@@ -1,10 +1,1001 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <title>Weave JS Mod</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VIBEZ - Neural Terminal Interface</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'JetBrains Mono', 'Courier New', monospace;
+            background: linear-gradient(135deg, #2a2419 0%, #1a1612 50%, #0f0d0a 100%);
+            color: #e0ddd5;
+            height: 100vh;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Animated background grid */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 1px, transparent 1px);
+            pointer-events: none;
+            z-index: -1;
+        }
+
+
+        /* Scanlines effect */
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                transparent 50%,
+                rgba(0, 255, 136, 0.03) 50%
+            );
+            background-size: 100% 4px;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* Splash screen */
+        .splash-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at center, #2a2419 0%, #0f0d0a 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            transition: opacity 0.8s ease-out, visibility 0.8s ease-out;
+        }
+
+        .splash-screen.hidden {
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        .vibez-logo {
+            font-family: 'Orbitron', monospace;
+            font-size: 4rem;
+            font-weight: 900;
+            color: #00ff88;
+            text-transform: uppercase;
+            letter-spacing: 0.5rem;
+            margin-bottom: 2rem;
+            text-shadow:
+                0 0 10px #00ff88,
+                0 0 20px #00ff88,
+                0 0 40px #00ff88;
+            animation: logoGlow 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes logoGlow {
+            from {
+                text-shadow:
+                    0 0 10px #00ff88,
+                    0 0 20px #00ff88,
+                    0 0 40px #00ff88;
+            }
+            to {
+                text-shadow:
+                    0 0 5px #00ff88,
+                    0 0 10px #00ff88,
+                    0 0 20px #00ff88;
+            }
+        }
+
+        .subtitle {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1rem;
+            color: #ffa500;
+            margin-bottom: 3rem;
+            opacity: 0.8;
+            letter-spacing: 0.2rem;
+            text-transform: uppercase;
+        }
+
+        .play-button {
+            position: relative;
+            width: 120px;
+            height: 120px;
+            border: 3px solid #00ff88;
+            border-radius: 50%;
+            background: linear-gradient(135deg, rgba(0, 255, 136, 0.1) 0%, rgba(255, 165, 0, 0.1) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            box-shadow:
+                0 0 20px rgba(0, 255, 136, 0.3),
+                inset 0 0 20px rgba(0, 255, 136, 0.1);
+        }
+
+        .play-button:hover {
+            transform: scale(1.1);
+            box-shadow:
+                0 0 30px rgba(0, 255, 136, 0.5),
+                inset 0 0 30px rgba(0, 255, 136, 0.2);
+        }
+
+        .play-icon {
+            width: 0;
+            height: 0;
+            border-left: 30px solid #00ff88;
+            border-top: 20px solid transparent;
+            border-bottom: 20px solid transparent;
+            margin-left: 8px;
+        }
+
+        /* Main interface */
+        .main-interface {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.8s ease-in, visibility 0.8s ease-in;
+        }
+
+        .main-interface.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* Header */
+        .header {
+            flex: 0 0 60px;
+            position: relative;
+            height: 60px;
+            background: linear-gradient(90deg, rgba(42, 36, 25, 0.9) 0%, rgba(26, 22, 18, 0.9) 100%);
+            backdrop-filter: blur(10px);
+            border-bottom: 2px solid rgba(0, 255, 136, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 2rem;
+            z-index: 100;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .header-logo {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #00ff88;
+            text-shadow: 0 0 10px #00ff88;
+        }
+
+        .system-info {
+            font-size: 0.8rem;
+            color: #ffa500;
+            opacity: 0.8;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .status-display {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.8rem;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #ff4444;
+            box-shadow: 0 0 10px currentColor;
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot.connected {
+            background: #00ff88;
+            color: #00ff88;
+        }
+
+        .status-dot.connecting {
+            background: #ffa500;
+            color: #ffa500;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Settings menu */
+        .settings-container {
+            position: relative;
+        }
+
+        .settings-button {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, rgba(0, 255, 136, 0.2) 0%, rgba(255, 165, 0, 0.2) 100%);
+            border: 1px solid rgba(0, 255, 136, 0.5);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            backdrop-filter: blur(5px);
+        }
+
+        .settings-button:hover {
+            background: linear-gradient(135deg, rgba(0, 255, 136, 0.3) 0%, rgba(255, 165, 0, 0.3) 100%);
+            box-shadow: 0 0 15px rgba(0, 255, 136, 0.3);
+            transform: rotate(90deg);
+        }
+
+        .gear-icon {
+            width: 20px;
+            height: 20px;
+            fill: #00ff88;
+            transition: all 0.2s ease;
+        }
+
+        /* Download button */
+        .download-button {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, rgba(255, 165, 0, 0.2) 0%, rgba(0, 255, 136, 0.2) 100%);
+            border: 1px solid rgba(255, 165, 0, 0.5);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            backdrop-filter: blur(5px);
+        }
+
+        .download-button:hover {
+            background: linear-gradient(135deg, rgba(255, 165, 0, 0.3) 0%, rgba(0, 255, 136, 0.3) 100%);
+            box-shadow: 0 0 15px rgba(255, 165, 0, 0.4);
+            transform: translateY(2px);
+        }
+
+        .download-button:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .download-icon {
+            width: 20px;
+            height: 20px;
+            fill: #ffa500;
+            transition: all 0.2s ease;
+        }
+
+        .settings-menu {
+            position: absolute;
+            top: 50px;
+            right: 0;
+            background: linear-gradient(135deg, rgba(42, 36, 25, 0.95) 0%, rgba(26, 22, 18, 0.95) 100%);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            border-radius: 12px;
+            padding: 1rem;
+            min-width: 200px;
+            box-shadow:
+                0 8px 32px rgba(0, 0, 0, 0.3),
+                0 0 20px rgba(0, 255, 136, 0.1);
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+        }
+
+        .settings-menu.visible {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .settings-menu::before {
+            content: '';
+            position: absolute;
+            top: -6px;
+            right: 15px;
+            width: 12px;
+            height: 12px;
+            background: linear-gradient(135deg, rgba(42, 36, 25, 0.95) 0%, rgba(26, 22, 18, 0.95) 100%);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            border-bottom: none;
+            border-right: none;
+            transform: rotate(45deg);
+        }
+
+        .control-row {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 0.8rem;
+        }
+
+        .control-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            background: linear-gradient(135deg, rgba(0, 255, 136, 0.2) 0%, rgba(255, 165, 0, 0.2) 100%);
+            color: #e0ddd5;
+            border: 1px solid rgba(0, 255, 136, 0.5);
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: all 0.2s ease;
+            backdrop-filter: blur(5px);
+            flex: 1;
+        }
+
+        .btn:hover:not(:disabled) {
+            background: linear-gradient(135deg, rgba(0, 255, 136, 0.3) 0%, rgba(255, 165, 0, 0.3) 100%);
+            box-shadow: 0 0 15px rgba(0, 255, 136, 0.3);
+            transform: translateY(-1px);
+        }
+
+        .btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn.primary {
+            background: linear-gradient(135deg, #00ff88 0%, #00cc6a 100%);
+            color: #000;
+            border-color: #00ff88;
+        }
+
+        .btn.primary:hover:not(:disabled) {
+            background: linear-gradient(135deg, #00ff88 0%, #00ff88 100%);
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.5);
+        }
+
+        .btn.danger {
+            background: linear-gradient(135deg, #ff4444 0%, #cc3333 100%);
+            color: #000;
+            border-color: #ff4444;
+        }
+
+        .btn.danger:hover:not(:disabled) {
+            background: linear-gradient(135deg, #ff6666 0%, #ff4444 100%);
+            box-shadow: 0 0 20px rgba(255, 68, 68, 0.5);
+        }
+
+        /* Terminal container */
+        .terminal-container {
+            flex: 1 1 auto;
+            min-height: 0;
+            margin: 0 20px;
+            position: relative;
+        }
+
+        #terminal {
+            width: 100%;
+            height: 100%;
+            border-radius: 8px;
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            box-shadow:
+                0 0 30px rgba(0, 255, 136, 0.1),
+                inset 0 0 30px rgba(0, 0, 0, 0.5);
+            background: #000000;
+        }
+
+        /* Footer */
+        .footer {
+            flex: 0 0 40px;
+            position: relative;
+            height: 40px;
+            background: linear-gradient(90deg, rgba(42, 36, 25, 0.9) 0%, rgba(26, 22, 18, 0.9) 100%);
+            backdrop-filter: blur(10px);
+            border-top: 1px solid rgba(0, 255, 136, 0.3);
+            display: flex;
+            align-items: center;
+            padding: 0 2rem;
+            font-size: 0.7rem;
+            color: rgba(224, 221, 213, 0.6);
+            z-index: 100;
+        }
+
+        .footer-left {
+            flex: 1;
+        }
+
+        .footer-right {
+            color: #ffa500;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .settings-menu {
+                position: fixed;
+                top: auto;
+                bottom: 20px;
+                right: 20px;
+                left: 20px;
+                right: 20px;
+            }
+
+            .terminal-container {
+                margin-bottom: 60px;
+            }
+
+            .vibez-logo {
+                font-size: 2.5rem;
+            }
+
+            .system-info {
+                display: none;
+            }
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(42, 36, 25, 0.5);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, #00ff88 0%, #ffa500 100%);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(135deg, #00cc6a 0%, #cc8400 100%);
+        }
+    </style>
 </head>
 <body>
-  <h1>Hello from JS Mod!</h1>
+    <!-- Splash Screen -->
+    <div class="splash-screen" id="splash-screen">
+        <div class="vibez-logo">VIBEZ</div>
+        <div class="subtitle">Neural Terminal Interface</div>
+        <div class="play-button" id="play-button">
+            <div class="play-icon"></div>
+        </div>
+    </div>
+
+    <!-- Main Interface -->
+    <div class="main-interface" id="main-interface">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-left">
+                <div class="header-logo">VIBEZ</div>
+                <div class="system-info">
+                    Neural Terminal Interface v2.1.7 | Claude Integration Active
+                </div>
+            </div>
+            <div class="header-right">
+                <div class="status-display">
+                    <div class="status-dot" id="status-dot"></div>
+                    <span id="status-text">Neural Link Offline</span>
+                </div>
+                <button class="download-button" id="download-button" title="Download Project Archive">
+                    <svg class="download-icon" viewBox="0 0 24 24">
+                        <path d="M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z"/>
+                    </svg>
+                </button>
+                <div class="settings-container">
+                    <button class="settings-button" id="settings-button">
+                        <svg class="gear-icon" viewBox="0 0 24 24">
+                            <path d="M12,15.5A3.5,3.5 0 0,1 8.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,15.5M19.43,12.97C19.47,12.65 19.5,12.33 19.5,12C19.5,11.67 19.47,11.34 19.43,11.03L21.54,9.37C21.73,9.22 21.78,8.95 21.66,8.73L19.66,5.27C19.54,5.05 19.27,4.96 19.05,5.05L16.56,6.05C16.04,5.66 15.5,5.32 14.87,5.07L14.5,2.42C14.46,2.18 14.25,2 14,2H10C9.75,2 9.54,2.18 9.5,2.42L9.13,5.07C8.5,5.32 7.96,5.66 7.44,6.05L4.95,5.05C4.73,4.96 4.46,5.05 4.34,5.27L2.34,8.73C2.22,8.95 2.27,9.22 2.46,9.37L4.57,11.03C4.53,11.34 4.5,11.67 4.5,12C4.5,12.33 4.53,12.65 4.57,12.97L2.46,14.63C2.27,14.78 2.22,15.05 2.34,15.27L4.34,18.73C4.46,18.95 4.73,19.03 4.95,18.95L7.44,17.94C7.96,18.34 8.5,18.68 9.13,18.93L9.5,21.58C9.54,21.82 9.75,22 10,22H14C14.25,22 14.46,21.82 14.5,21.58L14.87,18.93C15.5,18.68 16.04,18.34 16.56,17.94L19.05,18.95C19.27,19.03 19.54,18.95 19.66,18.73L21.66,15.27C21.78,15.05 21.73,14.78 21.54,14.63L19.43,12.97Z"/>
+                        </svg>
+                    </button>
+                    <div class="settings-menu" id="settings-menu">
+                        <div class="control-row">
+                            <button class="btn primary" id="connect-btn">CONNECT</button>
+                            <button class="btn" id="clear-btn">CLEAR</button>
+                        </div>
+                        <div class="control-row">
+                            <button class="btn danger" id="disconnect-btn" disabled>DISCONNECT</button>
+                            <button class="btn" id="paste-btn">PASTE</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Terminal Container -->
+        <div class="terminal-container">
+            <div id="terminal"></div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <div class="footer-left">
+                Neural pathways: Optimized | Synaptic relay: 0.2ms | Memory core: Stable
+            </div>
+            <div class="footer-right">
+                CTRL+SHIFT+V to paste | Full TTY emulation active
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@xterm/addon-webgl@0.18.0/lib/addon-webgl.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xterm-addon-web-links@0.9.0/lib/xterm-addon-web-links.js"></script>
+    <script type="module">
+        import { LocalEchoAddon } from 'https://cdn.jsdelivr.net/npm/@gytx/xterm-local-echo@0.1.8/+esm'
+
+        class VibezTerminal {
+            constructor() {
+                this.splash = document.getElementById('splash-screen');
+                this.mainInterface = document.getElementById('main-interface');
+                this.playButton = document.getElementById('play-button');
+                this.statusDot = document.getElementById('status-dot');
+                this.statusText = document.getElementById('status-text');
+                this.settingsButton = document.getElementById('settings-button');
+                this.settingsMenu = document.getElementById('settings-menu');
+                this.connectBtn = document.getElementById('connect-btn');
+                this.clearBtn = document.getElementById('clear-btn');
+                this.disconnectBtn = document.getElementById('disconnect-btn');
+                this.pasteBtn = document.getElementById('paste-btn');
+                this.websocket = null;
+                this.isConnected = false;
+                this.term = null;
+                this.inputBuffer = '';
+                this.inputFlushTimer = null;
+
+                this.setupSplashScreen();
+            }
+
+            setupSplashScreen() {
+                this.playButton.addEventListener('click', () => {
+                    this.startInterface();
+                });
+            }
+
+            startInterface() {
+                this.splash.classList.add('hidden');
+
+                setTimeout(() => {
+                    this.mainInterface.classList.add('visible');
+                    this.initializeTerminal();
+                    this.setupEventListeners();
+                    this.connect();
+                }, 800);
+            }
+
+            initializeTerminal() {
+                // Create cyberpunk-themed xterm.js terminal
+                this.term = new Terminal({
+                    cursorBlink: true,
+                    cursorStyle: 'block',
+                    fontFamily: '"JetBrains Mono", "Cascadia Code", "Fira Code", monospace',
+                    fontSize: 14,
+                    lineHeight: 1.2,
+                    theme: {
+                        background: '#000000',
+                        foreground: '#00ff88',
+                        cursor: '#00ff88',
+                        cursorAccent: '#000000',
+                        selectionBackground: '#ffa500',
+                        black: '#0f0d0a',
+                        red: '#ff4444',
+                        green: '#00ff88',
+                        yellow: '#ffa500',
+                        blue: '#44aaff',
+                        magenta: '#ff44aa',
+                        cyan: '#44ffaa',
+                        white: '#e0ddd5',
+                        brightBlack: '#2a2419',
+                        brightRed: '#ff6666',
+                        brightGreen: '#44ff88',
+                        brightYellow: '#ffb833',
+                        brightBlue: '#6666ff',
+                        brightMagenta: '#ff6666',
+                        brightCyan: '#66ffcc',
+                        brightWhite: '#ffffff'
+                    },
+                    allowProposedApi: true,
+                    allowTransparency: false,
+                    convertEol: true,
+                    scrollback: 10000,
+                    tabStopWidth: 4
+                });
+
+                // Add fit addon
+                this.fitAddon = new FitAddon.FitAddon();
+                this.term.loadAddon(this.fitAddon);
+
+                // Add web links addon
+                this.webLinksAddon = new WebLinksAddon.WebLinksAddon();
+                this.term.loadAddon(this.webLinksAddon);
+
+                // Add webgl addon
+                this.webglAddon = new WebglAddon.WebglAddon();
+                this.term.loadAddon(this.webglAddon);
+
+                // Add local echo addon
+                this.localEchoAddon = new LocalEchoAddon();
+                this.term.loadAddon(this.localEchoAddon);
+
+                // Open terminal
+                this.term.open(document.getElementById('terminal'));
+
+                // Fit terminal and display welcome
+                setTimeout(() => {
+                    this.fitAddon.fit();
+                    this.showWelcome();
+                }, 100);
+
+                // Handle terminal input
+                this.term.onData((data) => {
+                    this.bufferInput(data);
+                });
+
+                // Handle terminal resize
+                this.term.onResize((size) => {
+                    if (this.isConnected && this.websocket) {
+                        this.websocket.send(JSON.stringify({
+                            type: 'resize',
+                            cols: size.cols,
+                            rows: size.rows
+                        }));
+                    }
+                });
+
+                // Handle window resize
+                window.addEventListener('resize', () => {
+                    setTimeout(() => this.fitAddon.fit(), 100);
+                });
+            }
+
+            bufferInput(data) {
+                console.log('[bufferInput] Adding data to buffer:', JSON.stringify(data), 'at', performance.now());
+                this.inputBuffer += data;
+                if (this.inputFlushTimer) clearTimeout(this.inputFlushTimer);
+                this.inputFlushTimer = setTimeout(() => {
+                    if (this.isConnected && this.websocket && this.inputBuffer) {
+                        console.log('[bufferInput] Flushing buffer:', JSON.stringify(this.inputBuffer), 'at', performance.now());
+                        this.websocket.send(JSON.stringify({
+                            type: 'input',
+                            data: this.inputBuffer
+                        }));
+                        this.inputBuffer = '';
+                    }
+                }, 16); // 16ms = ~1 frame at 60Hz
+            }
+
+            showWelcome() {
+                const welcomeText = `\x1b[32m
+╔══════════════════════════════════════════════════════════════╗
+║                      VIBEZ NEURAL TERMINAL                   ║
+║                    Interface v2.1.7 Online                  ║
+╚══════════════════════════════════════════════════════════════╝\x1b[0m
+
+\x1b[33m[SYSTEM]\x1b[0m Initializing neural pathways...
+\x1b[33m[SYSTEM]\x1b[0m Quantum processors: \x1b[32mSTABLE\x1b[0m
+\x1b[33m[SYSTEM]\x1b[0m Memory core: \x1b[32mOPTIMIZED\x1b[0m
+\x1b[33m[SYSTEM]\x1b[0m Synaptic relay: \x1b[32m0.2ms\x1b[0m
+
+\x1b[36mReady for neural link activation. Use settings menu to connect.\x1b[0m
+
+`;
+                this.term.write(welcomeText);
+            }
+
+            setupEventListeners() {
+                // Settings menu toggle
+                this.settingsButton.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.toggleSettingsMenu();
+                });
+
+                // Close settings menu when clicking outside
+                document.addEventListener('click', (e) => {
+                    if (!this.settingsMenu.contains(e.target) && !this.settingsButton.contains(e.target)) {
+                        this.hideSettingsMenu();
+                    }
+                });
+
+                this.connectBtn.addEventListener('click', () => {
+                    this.connect();
+                    this.hideSettingsMenu();
+                });
+                this.clearBtn.addEventListener('click', () => {
+                    this.clear();
+                    this.hideSettingsMenu();
+                });
+                this.disconnectBtn.addEventListener('click', () => {
+                    this.disconnect();
+                    this.hideSettingsMenu();
+                });
+                this.pasteBtn.addEventListener('click', () => {
+                    this.paste();
+                    this.hideSettingsMenu();
+                });
+
+                // Handle paste with Ctrl+Shift+V
+                document.addEventListener('keydown', (e) => {
+                    if (e.ctrlKey && e.shiftKey && e.key === 'V') {
+                        e.preventDefault();
+                        this.paste();
+                    }
+                });
+            }
+
+            toggleSettingsMenu() {
+                this.settingsMenu.classList.toggle('visible');
+            }
+
+            hideSettingsMenu() {
+                this.settingsMenu.classList.remove('visible');
+            }
+
+            connect() {
+                const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                const wsUrl = `${protocol}//${window.location.host}/ws`;
+
+                this.updateConnectionStatus('connecting');
+                this.addSystemMessage('Establishing neural link to Claude consciousness...');
+
+                this.websocket = new WebSocket(wsUrl);
+
+                this.websocket.onopen = () => {
+                    this.isConnected = true;
+                    this.updateConnectionStatus('connected');
+                    this.term.focus();
+
+                    // Send initial terminal size
+                    this.websocket.send(JSON.stringify({
+                        type: 'resize',
+                        cols: this.term.cols,
+                        rows: this.term.rows
+                    }));
+
+                    this.addSystemMessage('Neural link established. Claude consciousness online.');
+                    this.term.write('\x1b[32m\r\n>>> NEURAL INTERFACE ACTIVE <<<\x1b[0m\r\n');
+                };
+
+                this.websocket.onmessage = (event) => {
+                    try {
+                        const message = JSON.parse(event.data);
+                        this.handleMessage(message);
+                    } catch (err) {
+                        console.error('Message parsing error:', err);
+                    }
+                };
+
+                this.websocket.onclose = () => {
+                    this.isConnected = false;
+                    this.updateConnectionStatus('disconnected');
+                    this.addSystemMessage('Neural link terminated.');
+                };
+
+                this.websocket.onerror = (error) => {
+                    console.error('Neural link error:', error);
+                    this.updateConnectionStatus('disconnected');
+                    this.addSystemMessage('Neural link failure detected.');
+                };
+            }
+
+            disconnect() {
+                if (this.websocket) {
+                    this.websocket.close();
+                }
+            }
+
+            handleMessage(message) {
+                switch (message.type) {
+                    case 'output':
+                        this.term.write(message.data);
+                        break;
+                    case 'error':
+                        this.term.write(`\x1b[31m${message.data}\x1b[0m`);
+                        break;
+                    case 'exit':
+                        this.addSystemMessage(`Process terminated [Exit code: ${message.code}]`);
+                        break;
+                    default:
+                        console.log('Unknown message type:', message.type);
+                }
+            }
+
+            addSystemMessage(message) {
+                this.term.writeln(`\x1b[33m[SYSTEM]\x1b[0m ${message}`);
+            }
+
+            clear() {
+                this.term.clear();
+                this.showWelcome();
+            }
+
+            async paste() {
+                try {
+                    const text = await navigator.clipboard.readText();
+                    if (text && this.isConnected) {
+                        this.websocket.send(JSON.stringify({
+                            type: 'input',
+                            data: text
+                        }));
+                    }
+                } catch (err) {
+                    console.warn('Clipboard access denied:', err);
+                    this.addSystemMessage('Clipboard access denied. Use CTRL+V in terminal.');
+                }
+            }
+
+            updateConnectionStatus(status) {
+                this.statusDot.className = `status-dot ${status}`;
+
+                switch (status) {
+                    case 'connected':
+                        this.statusText.textContent = 'Neural Link Active';
+                        this.connectBtn.disabled = true;
+                        this.disconnectBtn.disabled = false;
+                        break;
+                    case 'connecting':
+                        this.statusText.textContent = 'Establishing Link...';
+                        this.connectBtn.disabled = true;
+                        this.disconnectBtn.disabled = true;
+                        break;
+                    case 'disconnected':
+                        this.statusText.textContent = 'Neural Link Offline';
+                        this.connectBtn.disabled = false;
+                        this.disconnectBtn.disabled = true;
+                        break;
+                }
+            }
+        }
+
+        // Initialize when page loads
+        window.addEventListener('DOMContentLoaded', () => {
+            new VibezTerminal();
+        });
+
+        // Download button
+        document.getElementById('download-button').addEventListener('click', async () => {
+            try {
+                const downloadButton = document.getElementById('download-button');
+                downloadButton.disabled = true;
+
+                // Add loading state
+                const icon = downloadButton.querySelector('.download-icon');
+                icon.style.animation = 'spin 1s linear infinite';
+
+                const response = await fetch('/download');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                // Get the filename from the response headers or use a default
+                const contentDisposition = response.headers.get('content-disposition');
+                let filename = 'project-archive.tar.gz';
+                if (contentDisposition) {
+                    const filenameMatch = contentDisposition.match(/filename="(.+)"/);
+                    if (filenameMatch) {
+                        filename = filenameMatch[1];
+                    }
+                }
+
+                // Create blob and download
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+
+                showNotification('Archive downloaded successfully', 'success');
+            } catch (error) {
+                console.error('Download failed:', error);
+                showNotification('Download failed: ' + error.message, 'error');
+            } finally {
+                const downloadButton = document.getElementById('download-button');
+                downloadButton.disabled = false;
+                const icon = downloadButton.querySelector('.download-icon');
+                icon.style.animation = '';
+            }
+        });
+
+        // Utility function for notifications
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 80px;
+                right: 20px;
+                padding: 15px 20px;
+                border-radius: 8px;
+                color: white;
+                font-family: 'JetBrains Mono', monospace;
+                font-size: 14px;
+                z-index: 10000;
+                opacity: 0;
+                transform: translateX(100%);
+                transition: all 0.3s ease;
+                backdrop-filter: blur(10px);
+                border: 1px solid;
+                max-width: 300px;
+                word-wrap: break-word;
+            `;
+
+            if (type === 'success') {
+                notification.style.background = 'rgba(0, 255, 136, 0.2)';
+                notification.style.borderColor = 'rgba(0, 255, 136, 0.5)';
+            } else if (type === 'error') {
+                notification.style.background = 'rgba(255, 69, 58, 0.2)';
+                notification.style.borderColor = 'rgba(255, 69, 58, 0.5)';
+            } else {
+                notification.style.background = 'rgba(255, 165, 0, 0.2)';
+                notification.style.borderColor = 'rgba(255, 165, 0, 0.5)';
+            }
+
+            notification.textContent = message;
+            document.body.appendChild(notification);
+
+            // Animate in
+            setTimeout(() => {
+                notification.style.opacity = '1';
+                notification.style.transform = 'translateX(0)';
+            }, 100);
+
+            // Auto remove
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                notification.style.transform = 'translateX(100%)';
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        document.body.removeChild(notification);
+                    }
+                }, 300);
+            }, 3000);
+        }
+    </script>
 </body>
 </html>

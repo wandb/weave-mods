@@ -5,11 +5,13 @@
 #     "typer",
 #     "toml",
 #     "requests",
+# "pydantic",
 # ]
 # ///
 
 import json
 import os
+import shutil
 import subprocess
 import sys
 import time
@@ -24,6 +26,8 @@ import typer
 from rich.console import Console
 from rich.panel import Panel
 from rich.text import Text
+
+from build import JS_PACKAGE_MANAGER
 
 app = typer.Typer(no_args_is_help=True)
 
@@ -221,37 +225,50 @@ def dev(directory: Annotated[str, typer.Argument()] = "."):
     else:
         # Find pyproject.toml in the specified directory
         pyproject_path = os.path.join(directory, "pyproject.toml")
-        if not os.path.exists(pyproject_path):
+        js_path = os.path.join(directory, "package.json")
+        if not os.path.exists(pyproject_path) and not os.path.exists(js_path):
             typer.secho(
-                f"Warning: pyproject.toml not found in {directory}",
+                f"Warning: pyproject.toml or package.json not found in {directory}",
                 fg=typer.colors.YELLOW,
             )
             sys.exit(1)
         try:
-            subprocess.run(["uv", "sync"], cwd=directory, check=True)
+            if os.path.exists(pyproject_path):
+                subprocess.run(["uv", "sync"], cwd=directory, check=True)
+            else:
+                deno_server = Path(__file__).parent / "mods" / "deno_server.ts"
+                shutil.copy(deno_server, os.path.join(directory, "deno_server.ts"))
+                subprocess.run(
+                    [JS_PACKAGE_MANAGER, "install"], cwd=directory, check=True
+                )
         except subprocess.CalledProcessError as e:
-            typer.secho(f"Error running 'uv sync': {e}", fg=typer.colors.RED)
+            typer.secho(f"Error installing dependencies: {e}", fg=typer.colors.RED)
             sys.exit(1)
         # Parse pyproject.toml
         try:
-            with open(pyproject_path, "r") as f:
-                pyproject = toml.load(f)
+            if os.path.exists(pyproject_path):
+                with open(pyproject_path, "r") as f:
+                    pyproject = toml.load(f)
+                weave_config = pyproject.get("tool", {}).get("weave", {}).get("mod", {})
+            else:
+                with open(js_path, "r") as f:
+                    package = json.load(f)
+                weave_config = package.get("weave", {}).get("mod", {})
         except Exception as e:
             typer.secho(f"Error parsing pyproject.toml: {e}", fg=typer.colors.RED)
             sys.exit(1)
         # Get [tool.weave] section
-        weave_config = pyproject.get("tool", {}).get("weave", {}).get("mod", {})
         if not weave_config:
             typer.secho(
-                "Warning: [tool.weave.mod] section not found in pyproject.toml",
+                "Warning: [weave.mod] section not found in pyproject.toml or package.json",
                 fg=typer.colors.YELLOW,
             )
             sys.exit(1)
         # Check flavor
         flavor = weave_config.get("flavor", "")
-        if flavor not in ["streamlit", "fasthtml", "uvicorn", "custom"]:
+        if flavor not in ["streamlit", "fasthtml", "uvicorn", "spa", "custom"]:
             typer.secho(
-                "Flavor not one of streamlit, fasthtml, uvicorn, custom; nothing to do.",
+                "Flavor not one of streamlit, fasthtml, uvicorn, spa, custom; nothing to do.",
                 fg=typer.colors.YELLOW,
             )
             sys.exit(1)

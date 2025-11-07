@@ -1,0 +1,21 @@
+{
+  "tasks": {
+    "dev": "deno run --allow-net --allow-read --allow-env deno_server.ts"
+  },
+  "fmt": {
+    "files": {
+      "include": ["src/", "*.ts", "*.js"],
+      "exclude": ["dist/"]
+    }
+  },
+  "lint": {
+    "files": {
+      "include": ["src/", "*.ts", "*.js"],
+      "exclude": ["dist/"]
+    }
+  },
+  "imports": {
+    "@std/http": "jsr:@std/http@^1.0.17",
+    "@std/path": "jsr:@std/path@^1.1.0"
+  }
+}
