@@ -13,10 +13,6 @@ USER 999
 
 ENV PYTHONUNBUFFERED=1 UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy MARIMO_MANAGE_SCRIPT_METADATA=true
 
-# System deps
-RUN --mount=type=cache,uid=999,gid=999,target=/app/.cache/uv \
-    uv tool install dumb-init
-
 # Mod deps
 COPY --chown=999:999 . /app/src
 
@@ -27,7 +23,7 @@ ENV PATH=/app/src/.venv/bin:${PATH}
 
 EXPOSE 6637 6638
 
-ENTRYPOINT ["/app/.local/bin/dumb-init", "--"]
+ENTRYPOINT ["/usr/bin/dumb-init", "--"]
 
 # This get's populated by our build script and should start the healthcheck
 # and then the mod entrypoint
