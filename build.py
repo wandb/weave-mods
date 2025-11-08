@@ -189,22 +189,16 @@ def build(
             # Replace '$$MOD_ENTRYPOINT$$' with '["python", "app.py"]'
             mod_config = details_from_config(pyproject)
 
-            # Add Node.js LTS and dumb-init for marimo flavor
+            # Add Node.js LTS for marimo flavor (marimo uses it for code completion, formatting, etc.)
             if mod_config.flavor == "marimo":
-                node_install = """# Install Node.js LTS for marimo and dumb-init
+                node_install = """# Install Node.js LTS for marimo
 RUN curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - && \\
-    apt-get install -y nodejs dumb-init && \\
+    apt-get install -y nodejs && \\
     apt-get clean && \\
     rm -rf /var/lib/apt/lists/*
 """
             else:
-                # For non-marimo flavors, still need dumb-init
-                node_install = """# Install dumb-init
-RUN apt-get update && \\
-    apt-get install -y dumb-init && \\
-    apt-get clean && \\
-    rm -rf /var/lib/apt/lists/*
-"""
+                node_install = ""
 
             new_content = template_content.replace(
                 "$$MOD_ENTRYPOINT",
