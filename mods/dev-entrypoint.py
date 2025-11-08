@@ -252,12 +252,18 @@ async def main():
             "--client.toolbarMode=developer",
         ]
     elif flavor == "marimo":
+        # Support MARIMO_MODE environment variable for edit/run mode switching
+        mode = os.getenv("MARIMO_MODE", "edit").lower()
+        command = "run" if mode == "run" else "edit"
         args = [
             "uv",
             "run",
             "--no-project",
             "marimo",
-            "run",
+            command,
+            "--headless",
+            "--no-token",
+            "--no-sandbox",
             "--port=" + os.getenv("PORT"),
             "--host=0.0.0.0",
             *entrypoint,
@@ -268,7 +274,7 @@ async def main():
         args = ["uv", "run", "--no-project", *entrypoint]
     else:
         raise ValueError(f"Unsupported flavor: {flavor}")
-    print(f"Running {flavor} app from {os.getcwd()}: {" ".join(args)}")
+    print(f"Running {flavor} app from {os.getcwd()}: {' '.join(args)}")
     # Start healthcheck.py in the background
     health_log = open("/tmp/health.log", "w")
     await asyncio.create_subprocess_exec(

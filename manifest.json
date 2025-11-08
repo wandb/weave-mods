@@ -14,7 +14,8 @@
         ],
         "description": "A demo of using helpers from the weave mods sdk",
         "version": "0.1.0",
-        "secrets": []
+        "secrets": [],
+        "flavor": "streamlit"
     },
     "playground": {
         "name": "playground",
@@ -29,7 +30,8 @@
         "version": "0.1.0",
         "secrets": [
             "OPENAI_API_KEY"
-        ]
+        ],
+        "flavor": "custom"
     },
     "together-ft": {
         "name": "together-ft",
@@ -43,7 +45,8 @@
             "TOGETHER_API_KEY",
             "WANDB_API_KEY",
             "OPENAI_API_KEY"
-        ]
+        ],
+        "flavor": "streamlit"
     },
     "openui": {
         "name": "openui",
@@ -60,7 +63,8 @@
             "OPENAI_API_KEY",
             "ANTHROPIC_API_KEY",
             "WANDB_API_KEY"
-        ]
+        ],
+        "flavor": "custom"
     },
     "guardrails-playground": {
         "name": "guardrails-playground",
@@ -80,7 +84,8 @@
         "secrets": [
             "OPENAI_API_KEY",
             "WANDB_API_KEY"
-        ]
+        ],
+        "flavor": "streamlit"
     },
     "dashboard": {
         "name": "dashboard",
@@ -99,7 +104,20 @@
         "version": "0.1.0",
         "secrets": [
             "WANDB_API_KEY"
-        ]
+        ],
+        "flavor": "streamlit"
+    },
+    "marimo": {
+        "name": "marimo",
+        "classifiers": [],
+        "entrypoint": [
+            "python",
+            "/app/src/marimo-entrypoint.py"
+        ],
+        "description": "Example marimo mod demonstrating edit and publish modes",
+        "version": "0.1.0",
+        "secrets": [],
+        "flavor": "marimo"
     },
     "anamolyzer": {
         "name": "anamolyzer",
@@ -116,7 +134,8 @@
         ],
         "description": "A tool for detecting anomalies in weave trace data",
         "version": "0.1.0",
-        "secrets": []
+        "secrets": [],
+        "flavor": "streamlit"
     },
     "embedding-classifier": {
         "name": "embedding-classifier",
@@ -136,7 +155,8 @@
         "secrets": [
             "OPENAI_API_KEY",
             "WANDB_API_KEY"
-        ]
+        ],
+        "flavor": "streamlit"
     },
     "html": {
         "name": "html",
@@ -156,6 +176,7 @@
         "secrets": [
             "WANDB_API_KEY",
             "OPENAI_API_KEY"
-        ]
+        ],
+        "flavor": "streamlit"
     }
 }

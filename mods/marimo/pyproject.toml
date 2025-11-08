@@ -1,0 +1,16 @@
+[project]
+name = "marimo-example"
+version = "0.1.0"
+description = "Example marimo mod demonstrating edit and publish modes"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = ["marimo[recommended]>=0.17.7", "weave>=0.52.0", "wandb>=0.22.0"]
+
+[tool.weave.mod]
+flavor = "marimo"
+
+[tool.uv.sources]
+mods = { path = "../../sdk", editable = true }
+
+[dependency-groups]
+dev = ["mods"]

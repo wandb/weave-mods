@@ -7,13 +7,25 @@ RUN groupadd -r app && \
     mkdir -p /app && \
     chown -R app:app /app
 
+# Install dumb-init and locales (required for all flavors)
+RUN apt-get update && \
+    apt-get install -y dumb-init locales && \
+    sed -i '/en_US.UTF-8/s/^# //g' /etc/locale.gen && \
+    locale-gen && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+ENV LANG=en_US.UTF-8 \
+    LANGUAGE=en_US:en \
+    LC_ALL=en_US.UTF-8
+
+$$MARIMO_NODE_INSTALL
+
+$$MARIMO_BASHRC
+
 USER 999
 
 ENV PYTHONUNBUFFERED=1 UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy MARIMO_MANAGE_SCRIPT_METADATA=true
-
-# System deps
-RUN --mount=type=cache,uid=999,gid=999,target=/app/.cache/uv \
-    uv tool install dumb-init
 
 # Mod deps
 COPY --chown=999:999 . /app/src
@@ -25,7 +37,7 @@ ENV PATH=/app/src/.venv/bin:${PATH}
 
 EXPOSE 6637 6638
 
-ENTRYPOINT ["/app/.local/bin/dumb-init", "--"]
+ENTRYPOINT ["/usr/bin/dumb-init", "--"]
 
 # This get's populated by our build script and should start the healthcheck
 # and then the mod entrypoint

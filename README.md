@@ -65,6 +65,31 @@ DEFAULT_OPENAI_MODEL = "gpt-4o-mini"
 - `marimo`: A Marimo app.
 - `custom`: A custom entrypoint.
 
+#### Marimo Mode Switching
+
+Marimo mods support two runtime modes that can be switched without rebuilding:
+
+- **Edit mode** (default): Interactive notebook editing with live updates
+- **Publish mode**: Read-only view for end users
+
+Control the mode using the `MARIMO_MODE` environment variable:
+
+```bash
+# Development - Edit mode (default)
+./dev.py mods/marimo
+
+# Development - Publish mode
+MARIMO_MODE=publish ./dev.py mods/marimo
+
+# Production - Edit mode (default)
+docker run -p 6637:6637 localhost/marimo-example:latest
+
+# Production - Publish mode
+docker run -p 6637:6637 -e MARIMO_MODE=publish localhost/marimo-example:latest
+```
+
+See `mods/marimo/` for a complete example.
+
 ### Secrets
 
 The secrets specified will automatically be exposed to the container.  When a mod is running in the cloud, we will ask the user to specify any secrets they haven't configured.

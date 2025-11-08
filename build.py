@@ -49,7 +49,7 @@ FLAVORS = {
         "--server.enableXsrfProtection=false",
         "--client.toolbarMode=minimal",
     ],
-    "marimo": ["marimo", "run", "--port=6637", "--host=0.0.0.0", "/app/src/app.py"],
+    "marimo": ["python", "/app/src/marimo-entrypoint.py"],
 }
 
 
@@ -60,6 +60,7 @@ class ModConfig(BaseModel):
     description: str
     version: str
     secrets: List[str]
+    flavor: str
 
 
 class DockerConfig(BaseModel):
@@ -98,6 +99,7 @@ def details_from_config(pyproject_path: Path) -> dict:
         description=description,
         version=version,
         secrets=secrets,
+        flavor=flavor,
     )
 
 
@@ -186,11 +188,32 @@ def build(
 
             # Replace '$$MOD_ENTRYPOINT$$' with '["python", "app.py"]'
             mod_config = details_from_config(pyproject)
-            new_content = template_content.replace(
-                "$$MOD_ENTRYPOINT",
-                " ".join(
-                    ["python", "/app/src/healthcheck.py", "&"] + mod_config.entrypoint
-                ),
+
+            # Add Node.js LTS and custom PS1 for marimo flavor
+            if mod_config.flavor == "marimo":
+                node_install = """# Install Node.js LTS for marimo
+RUN curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - && \\
+    apt-get install -y nodejs && \\
+    apt-get clean && \\
+    rm -rf /var/lib/apt/lists/*
+"""
+                bashrc_config = """# Configure PS1 prompt for marimo (uses WANDB_PROJECT or defaults to 'mods')
+RUN echo 'export PS1="app@${WANDB_PROJECT:-mods}:\\w$ "' >> /etc/bash.bashrc
+"""
+            else:
+                node_install = ""
+                bashrc_config = ""
+
+            new_content = (
+                template_content.replace(
+                    "$$MOD_ENTRYPOINT",
+                    " ".join(
+                        ["python", "/app/src/healthcheck.py", "&"]
+                        + mod_config.entrypoint
+                    ),
+                )
+                .replace("$$MARIMO_NODE_INSTALL", node_install)
+                .replace("$$MARIMO_BASHRC", bashrc_config)
             )
 
             # Write the new Dockerfile
@@ -199,6 +222,13 @@ def build(
 
             # Copy healthcheck.py to the mod directory
             shutil.copy(healthcheck, dir_path)
+
+            # For marimo flavor, also copy the entrypoint wrapper
+            if mod_config.flavor == "marimo":
+                marimo_entrypoint = (
+                    Path(__file__).parent / "mods" / "marimo-entrypoint.py"
+                )
+                shutil.copy(marimo_entrypoint, dir_path)
 
             # Build the Docker image
             docker_tags = [
@@ -264,6 +294,8 @@ def build(
                 healthcheck_path.unlink(missing_ok=True)
                 dockerignore_path.unlink(missing_ok=True)
                 dockerfile_path.unlink(missing_ok=True)
+                marimo_entrypoint_path = dir_path / "marimo-entrypoint.py"
+                marimo_entrypoint_path.unlink(missing_ok=True)
     log.print(
         f"{'Built' if build else 'Wrote'} {len(mod_configs)} mods {'to the manifest' if manifest else ''}",
         style="green",

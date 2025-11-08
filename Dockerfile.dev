@@ -8,14 +8,28 @@ RUN groupadd -r app && \
     mkdir -p /app && \
     chown -R app:app /app
 
+# Install Node.js LTS for marimo (code completion, formatting, etc.), dumb-init, and locales
+RUN curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - && \
+    apt-get install -y nodejs dumb-init locales && \
+    sed -i '/en_US.UTF-8/s/^# //g' /etc/locale.gen && \
+    locale-gen && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+ENV LANG=en_US.UTF-8 \
+    LANGUAGE=en_US:en \
+    LC_ALL=en_US.UTF-8
+
+# Configure PS1 prompt for marimo (uses WANDB_PROJECT or defaults to 'mods')
+RUN echo 'export PS1="app@${WANDB_PROJECT:-mods}:\\w$ "' >> /etc/bash.bashrc
+
 USER 999
 
 ENV PATH=/app/.local/bin:/app/.venv/bin:${PATH} PYTHONUNBUFFERED=1 UV_LINK_MODE=copy MARIMO_MANAGE_SCRIPT_METADATA=true
 
 RUN uv venv && \
     uv init && \
-    uv add streamlit toml weave packageurl-python && \
-    uv tool install dumb-init
+    uv add streamlit toml weave packageurl-python
 
 COPY mods /mods
 COPY sdk /sdk
@@ -24,6 +38,6 @@ EXPOSE 6637
 
 HEALTHCHECK --start-interval=1s --start-period=30s --interval=10s CMD curl -f http://localhost:6638/health
 
-ENTRYPOINT [ "/app/.local/bin/dumb-init", "--"]
+ENTRYPOINT [ "/usr/bin/dumb-init", "--"]
 
 CMD ["python", "/mods/dev-entrypoint.py"]
