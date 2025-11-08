@@ -12,3 +12,4 @@ mods/health.log
 !mods/healthcheck.py
 !mods/marimo-entrypoint.py
 build_output.json
+docs/plans/
