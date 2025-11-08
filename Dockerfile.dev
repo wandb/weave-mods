@@ -20,9 +20,12 @@ ENV LANG=en_US.UTF-8 \
     LANGUAGE=en_US:en \
     LC_ALL=en_US.UTF-8
 
+# Configure PS1 prompt for marimo (uses WANDB_PROJECT or defaults to 'mods')
+RUN echo 'export PS1="app@${WANDB_PROJECT:-mods}:\\w$ "' >> /etc/bash.bashrc
+
 USER 999
 
-ENV PATH=/app/.local/bin:/app/.venv/bin:${PATH} PYTHONUNBUFFERED=1 UV_LINK_MODE=copy MARIMO_MANAGE_SCRIPT_METADATA=true PS1="app@marimo:\w$ "
+ENV PATH=/app/.local/bin:/app/.venv/bin:${PATH} PYTHONUNBUFFERED=1 UV_LINK_MODE=copy MARIMO_MANAGE_SCRIPT_METADATA=true
 
 RUN uv venv && \
     uv init && \

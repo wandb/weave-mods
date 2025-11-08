@@ -197,10 +197,12 @@ RUN curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - && \\
     apt-get clean && \\
     rm -rf /var/lib/apt/lists/*
 """
-                ps1_config = 'PS1="app@marimo:\\w$ "'
+                bashrc_config = """# Configure PS1 prompt for marimo (uses WANDB_PROJECT or defaults to 'mods')
+RUN echo 'export PS1="app@${WANDB_PROJECT:-mods}:\\w$ "' >> /etc/bash.bashrc
+"""
             else:
                 node_install = ""
-                ps1_config = ""
+                bashrc_config = ""
 
             new_content = (
                 template_content.replace(
@@ -211,7 +213,7 @@ RUN curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - && \\
                     ),
                 )
                 .replace("$$MARIMO_NODE_INSTALL", node_install)
-                .replace("$$MARIMO_PS1", ps1_config)
+                .replace("$$MARIMO_BASHRC", bashrc_config)
             )
 
             # Write the new Dockerfile
