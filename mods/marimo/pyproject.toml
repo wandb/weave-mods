@@ -4,12 +4,7 @@ version = "0.1.0"
 description = "Example marimo mod demonstrating edit and publish modes"
 readme = "README.md"
 requires-python = ">=3.12"
-dependencies = [
-    "duckdb>=1.4.1",
-    "marimo[recommended]>=0.17.7",
-    "polars[pyarrow]>=1.35.1",
-    "sqlglot>=27.29.0",
-]
+dependencies = ["marimo[recommended]>=0.17.7", "weave>=0.52.0", "wandb>=0.22.0"]
 
 [tool.weave.mod]
 flavor = "marimo"
@@ -18,6 +13,4 @@ flavor = "marimo"
 mods = { path = "../../sdk", editable = true }
 
 [dependency-groups]
-dev = [
-    "mods",
-]
+dev = ["mods"]

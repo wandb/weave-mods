@@ -3,10 +3,10 @@
 Entrypoint wrapper for marimo mods in production.
 
 Reads MARIMO_MODE environment variable to determine whether to run
-marimo in edit mode (interactive) or publish mode (read-only).
+marimo in edit mode (interactive) or run mode (read-only).
 
 Environment Variables:
-    MARIMO_MODE: "edit" (default) or "publish"
+    MARIMO_MODE: "edit" (default) or "run"
     PORT: Port to run on (default: 6637)
 """
 
@@ -18,7 +18,7 @@ def main():
     mode = os.getenv("MARIMO_MODE", "edit").lower()
 
     # Validate and set command
-    if mode == "publish":
+    if mode == "run":
         command = "run"
     else:
         # Default to edit for any other value (including "edit" or invalid)
@@ -28,7 +28,16 @@ def main():
     port = os.getenv("PORT", "6637")
 
     # Build command args
-    args = ["marimo", command, f"--port={port}", "--host=0.0.0.0", "/app/src/app.py"]
+    args = [
+        "marimo",
+        command,
+        "--headless",
+        "--no-token",
+        "--no-sandbox",
+        f"--port={port}",
+        "--host=0.0.0.0",
+        "/app/src/app.py",
+    ]
 
     # Replace current process with marimo
     os.execvp("marimo", args)

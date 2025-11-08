@@ -730,6 +730,15 @@ wheels = [
 ]
 
 [[package]]
+name = "iniconfig"
+version = "2.3.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/72/34/14ca021ce8e5dfedc35312d08ba8bf51fdd999c576889fc2c24cb97f4f10/iniconfig-2.3.0.tar.gz", hash = "sha256:c76315c77db068650d49c5b56314774a7804df16fee4402c1f19d6d15d8c4730", size = 20503, upload-time = "2025-10-18T21:55:43.219Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/cb/b1/3846dd7f199d53cb17f49cba7e651e9ce294d8497c8c150530ed11865bb8/iniconfig-2.3.0-py3-none-any.whl", hash = "sha256:f631c04d2c48c52b84d0d0549c99ff3859c98df65b3101406327ecc7d53fbf12", size = 7484, upload-time = "2025-10-18T21:55:41.639Z" },
+]
+
+[[package]]
 name = "intervaltree"
 version = "3.1.0"
 source = { registry = "https://pypi.org/simple" }
@@ -983,10 +992,10 @@ name = "marimo-example"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
-    { name = "duckdb" },
     { name = "marimo", extra = ["recommended"] },
-    { name = "polars", extra = ["pyarrow"] },
-    { name = "sqlglot" },
+    { name = "pytest" },
+    { name = "wandb" },
+    { name = "weave" },
 ]
 
 [package.dev-dependencies]
@@ -996,10 +1005,10 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "duckdb", specifier = ">=1.4.1" },
     { name = "marimo", extras = ["recommended"], specifier = ">=0.17.7" },
-    { name = "polars", extras = ["pyarrow"], specifier = ">=1.35.1" },
-    { name = "sqlglot", specifier = ">=27.29.0" },
+    { name = "pytest", specifier = ">=8.4.2" },
+    { name = "wandb", specifier = ">=0.22.0" },
+    { name = "weave", specifier = ">=0.52.0" },
 ]
 
 [package.metadata.requires-dev]
@@ -1502,6 +1511,15 @@ wheels = [
 ]
 
 [[package]]
+name = "pluggy"
+version = "1.6.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/f9/e2/3e91f31a7d2b083fe6ef3fa267035b518369d9511ffab804f839851d2779/pluggy-1.6.0.tar.gz", hash = "sha256:7dcc130b76258d33b90f61b658791dede3486c3e6bfb003ee5c9bfb396dd22f3", size = 69412, upload-time = "2025-05-15T12:30:07.975Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/54/20/4d324d65cc6d9205fabedc306948156824eb9f0ee1633355a8f7ec5c66bf/pluggy-1.6.0-py3-none-any.whl", hash = "sha256:e920276dd6813095e9377c0bc5566d94c932c33b27a3e3945d8389c374dd4746", size = 20538, upload-time = "2025-05-15T12:30:06.134Z" },
+]
+
+[[package]]
 name = "polars"
 version = "1.35.1"
 source = { registry = "https://pypi.org/simple" }
@@ -1869,6 +1887,22 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/0f/49/4cea918a08f02817aabae639e3d0ac046fef9f9180518a3ad394e22da148/pyreadline3-3.5.4.tar.gz", hash = "sha256:8d57d53039a1c75adba8e50dd3d992b28143480816187ea5efbd5c78e6c885b7", size = 99839, upload-time = "2024-09-19T02:40:10.062Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/5a/dc/491b7661614ab97483abf2056be1deee4dc2490ecbf7bff9ab5cdbac86e1/pyreadline3-3.5.4-py3-none-any.whl", hash = "sha256:eaf8e6cc3c49bcccf145fc6067ba8643d1df34d604a1ec0eccbf7a18e6d3fae6", size = 83178, upload-time = "2024-09-19T02:40:08.598Z" },
+]
+
+[[package]]
+name = "pytest"
+version = "8.4.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "colorama", marker = "sys_platform == 'win32'" },
+    { name = "iniconfig" },
+    { name = "packaging" },
+    { name = "pluggy" },
+    { name = "pygments" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/a3/5c/00a0e072241553e1a7496d638deababa67c5058571567b92a7eaa258397c/pytest-8.4.2.tar.gz", hash = "sha256:86c0d0b93306b961d58d62a4db4879f27fe25513d4b969df351abdddb3c30e01", size = 1519618, upload-time = "2025-09-04T14:34:22.711Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/a8/a4/20da314d277121d6534b3a980b29035dcd51e6744bd79075a6ce8fa4eb8d/pytest-8.4.2-py3-none-any.whl", hash = "sha256:872f880de3fc3a5bdc88a11b39c9710c3497a547cfa9320bc3c5e62fbf272e79", size = 365750, upload-time = "2025-09-04T14:34:20.226Z" },
 ]
 
 [[package]]
@@ -2427,7 +2461,7 @@ wheels = [
 
 [[package]]
 name = "weave"
-version = "0.52.15"
+version = "0.52.16"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "click" },
@@ -2443,9 +2477,9 @@ dependencies = [
     { name = "tzdata", marker = "sys_platform == 'win32'" },
     { name = "wandb" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/77/cd/f806d13a1419445ef08d6afd7910d4cc4b5f4edb7270d7a9db4fce5672bb/weave-0.52.15.tar.gz", hash = "sha256:8efbc74ba4cf2d6d0b32dac66196b7723f199b6b66a2ec37f29e58718e5fa7a0", size = 604718, upload-time = "2025-11-06T20:26:02.225Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/be/30/b795b5a857e8a908e68f3ed969587bb2bc63527ef2260f72ac1a6fd983e8/weave-0.52.16.tar.gz", hash = "sha256:7bb8fdce0393007e9c40fb1769d0606bfe55401c4cd13146457ccac4b49c695d", size = 607024, upload-time = "2025-11-07T19:45:30.898Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/6b/ac/e3b11ae5cb1dfdd849020d71ee3f1628fd42268bb9435851fcbcca6d6bff/weave-0.52.15-py3-none-any.whl", hash = "sha256:ae377ff49c14662d9ce46df59d24ee319cde87e42fe2d28356caab5559182ad0", size = 761637, upload-time = "2025-11-06T20:25:59.448Z" },
+    { url = "https://files.pythonhosted.org/packages/e5/87/a54513796605dfaef2c3c23c2733bcb4b24866a623635c057b2ffdb74052/weave-0.52.16-py3-none-any.whl", hash = "sha256:85985b8cf233032c6d915dfac95b3bcccb1304444d99a6b4a61f3666b58146ce", size = 764366, upload-time = "2025-11-07T19:45:28.878Z" },
 ]
 
 [[package]]

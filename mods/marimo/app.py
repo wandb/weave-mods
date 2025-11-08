@@ -1,9 +1,9 @@
 # /// script
 # requires-python = ">=3.12"
 # dependencies = [
-#     "duckdb==1.4.1",
-#     "marimo",
-#     "sqlglot==27.29.0",
+#     "marimo[recommended]",
+#     "weave",
+#     "wandb==0.22.3",
 # ]
 # ///
 

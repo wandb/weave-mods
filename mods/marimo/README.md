@@ -44,7 +44,7 @@ Access at: http://localhost:6637
 
 ## Environment Variables
 
-- `MARIMO_MODE`: Set to "edit" (default) or "publish"
+- `MARIMO_MODE`: Set to "edit" (default) or "run"
 - `PORT`: Port to run on (default: 6637)
 
 ## Features Demonstrated
