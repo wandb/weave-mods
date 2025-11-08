@@ -7,6 +7,8 @@ RUN groupadd -r app && \
     mkdir -p /app && \
     chown -R app:app /app
 
+$$MARIMO_NODE_INSTALL
+
 USER 999
 
 ENV PYTHONUNBUFFERED=1 UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy MARIMO_MANAGE_SCRIPT_METADATA=true

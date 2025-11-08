@@ -188,12 +188,24 @@ def build(
 
             # Replace '$$MOD_ENTRYPOINT$$' with '["python", "app.py"]'
             mod_config = details_from_config(pyproject)
+
+            # Add Node.js LTS for marimo flavor (marimo uses it for code completion, formatting, etc.)
+            if mod_config.flavor == "marimo":
+                node_install = """# Install Node.js LTS for marimo
+RUN curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - && \\
+    apt-get install -y nodejs && \\
+    apt-get clean && \\
+    rm -rf /var/lib/apt/lists/*
+"""
+            else:
+                node_install = ""
+
             new_content = template_content.replace(
                 "$$MOD_ENTRYPOINT",
                 " ".join(
                     ["python", "/app/src/healthcheck.py", "&"] + mod_config.entrypoint
                 ),
-            )
+            ).replace("$$MARIMO_NODE_INSTALL", node_install)
 
             # Write the new Dockerfile
             with dockerfile_path.open("w") as f:
