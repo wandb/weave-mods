@@ -8,11 +8,17 @@ RUN groupadd -r app && \
     mkdir -p /app && \
     chown -R app:app /app
 
-# Install Node.js LTS for marimo (code completion, formatting, etc.) and dumb-init
+# Install Node.js LTS for marimo (code completion, formatting, etc.), dumb-init, and locales
 RUN curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - && \
-    apt-get install -y nodejs dumb-init && \
+    apt-get install -y nodejs dumb-init locales && \
+    sed -i '/en_US.UTF-8/s/^# //g' /etc/locale.gen && \
+    locale-gen && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
+
+ENV LANG=en_US.UTF-8 \
+    LANGUAGE=en_US:en \
+    LC_ALL=en_US.UTF-8
 
 USER 999
 

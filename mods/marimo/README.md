@@ -6,21 +6,21 @@ An example marimo mod demonstrating edit and publish modes.
 
 This mod showcases marimo's ability to run in two modes:
 
-- **Edit Mode**: Full interactive notebook editing capabilities (default in dev)
-- **Run Mode**: Read-only view for end users (default in production)
+- **Edit Mode** (default): Full interactive notebook editing capabilities
+- **Publish Mode**: Read-only view for end users
 
 ## Usage
 
 ### Development
 
-Run in edit mode (default in dev):
+Run in edit mode (default):
 ```bash
 ./dev.py mods/marimo
 ```
 
-Run in run mode:
+Run in publish mode:
 ```bash
-MARIMO_MODE=run ./dev.py mods/marimo
+MARIMO_MODE=publish ./dev.py mods/marimo
 ```
 
 ### Production
@@ -30,14 +30,14 @@ Build the Docker image:
 ./build.py mods/marimo
 ```
 
-Run in run mode (default in production):
+Run in edit mode (default):
 ```bash
 docker run -p 6637:6637 localhost/marimo-example:latest
 ```
 
-Run in edit mode:
+Run in publish mode:
 ```bash
-docker run -p 6637:6637 -e MARIMO_MODE=edit localhost/marimo-example:latest
+docker run -p 6637:6637 -e MARIMO_MODE=publish localhost/marimo-example:latest
 ```
 
 Access at: http://localhost:6637

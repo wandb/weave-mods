@@ -69,8 +69,8 @@ DEFAULT_OPENAI_MODEL = "gpt-4o-mini"
 
 Marimo mods support two runtime modes that can be switched without rebuilding:
 
-- **Edit mode**: Interactive notebook editing with live updates (default in dev)
-- **Run mode**: Read-only view for end users (default in production)
+- **Edit mode** (default): Interactive notebook editing with live updates
+- **Publish mode**: Read-only view for end users
 
 Control the mode using the `MARIMO_MODE` environment variable:
 
@@ -78,14 +78,14 @@ Control the mode using the `MARIMO_MODE` environment variable:
 # Development - Edit mode (default)
 ./dev.py mods/marimo
 
-# Development - Run mode
-MARIMO_MODE=run ./dev.py mods/marimo
+# Development - Publish mode
+MARIMO_MODE=publish ./dev.py mods/marimo
 
-# Production - Run mode (default)
+# Production - Edit mode (default)
 docker run -p 6637:6637 localhost/marimo-example:latest
 
-# Production - Edit mode
-docker run -p 6637:6637 -e MARIMO_MODE=edit localhost/marimo-example:latest
+# Production - Publish mode
+docker run -p 6637:6637 -e MARIMO_MODE=publish localhost/marimo-example:latest
 ```
 
 See `mods/marimo/` for a complete example.
