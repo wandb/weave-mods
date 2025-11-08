@@ -8,6 +8,12 @@ RUN groupadd -r app && \
     mkdir -p /app && \
     chown -R app:app /app
 
+# Install Node.js LTS for marimo (code completion, formatting, etc.)
+RUN curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - && \
+    apt-get install -y nodejs && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
 USER 999
 
 ENV PATH=/app/.local/bin:/app/.venv/bin:${PATH} PYTHONUNBUFFERED=1 UV_LINK_MODE=copy MARIMO_MANAGE_SCRIPT_METADATA=true
