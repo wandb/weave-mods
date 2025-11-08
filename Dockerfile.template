@@ -7,11 +7,17 @@ RUN groupadd -r app && \
     mkdir -p /app && \
     chown -R app:app /app
 
-# Install dumb-init (required for all flavors)
+# Install dumb-init and locales (required for all flavors)
 RUN apt-get update && \
-    apt-get install -y dumb-init && \
+    apt-get install -y dumb-init locales && \
+    sed -i '/en_US.UTF-8/s/^# //g' /etc/locale.gen && \
+    locale-gen && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
+
+ENV LANG=en_US.UTF-8 \
+    LANGUAGE=en_US:en \
+    LC_ALL=en_US.UTF-8
 
 $$MARIMO_NODE_INSTALL
 

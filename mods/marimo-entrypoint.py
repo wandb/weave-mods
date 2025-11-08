@@ -6,7 +6,7 @@ Reads MARIMO_MODE environment variable to determine whether to run
 marimo in edit mode (interactive) or run mode (read-only).
 
 Environment Variables:
-    MARIMO_MODE: "edit" (default) or "run"
+    MARIMO_MODE: "edit" or "run" (default)
     PORT: Port to run on (default: 6637)
 """
 
@@ -14,15 +14,15 @@ import os
 
 
 def main():
-    # Read mode from environment, default to "edit"
-    mode = os.getenv("MARIMO_MODE", "edit").lower()
+    # Read mode from environment, default to "run" for production
+    mode = os.getenv("MARIMO_MODE", "run").lower()
 
     # Validate and set command
-    if mode == "run":
-        command = "run"
-    else:
-        # Default to edit for any other value (including "edit" or invalid)
+    if mode == "edit":
         command = "edit"
+    else:
+        # Default to run for any other value (including "run" or invalid)
+        command = "run"
 
     # Get port from environment (default is 6637)
     port = os.getenv("PORT", "6637")
