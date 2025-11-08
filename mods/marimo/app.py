@@ -54,7 +54,7 @@ def _(mo):
     docker run -p 6637:6637 localhost/marimo-example:latest
 
     # Publish mode
-    docker run -p 6637:6637 -e MARIMO_MODE=publish localhost/marimo-example:latest
+    docker run -p 6637:6637 -e MARIMO_MODE=run localhost/marimo-example:latest
     ```
     """)
     return

@@ -7,21 +7,71 @@ Creates an artifact only if:
 - WANDB_PROJECT environment variable is set
 - /app/src/pyproject.toml exists (to derive artifact name)
 
-Artifact naming: {WANDB_PROJECT}/{project.name}:latest
+Artifact naming: {entity}/{project}/{artifact_name}:latest
 Artifact type: app
 """
 
 import os
-import subprocess
 import sys
 import tomllib
 from pathlib import Path
+
+import wandb
+from wandb.apis.public import PublicApi
+from wandb.sdk.internal.internal_api import Api as InternalApi
 
 # ANSI color codes for output
 RED = "\033[91m"
 GREEN = "\033[92m"
 YELLOW = "\033[93m"
 RESET = "\033[0m"
+
+# Files and directories to exclude from artifact
+EXCLUDE_PATTERNS = [
+    # Mod infrastructure files
+    "healthcheck.py",
+    "marimo-entrypoint.py",
+    "dev-entrypoint.py",
+    # Build artifacts
+    "__marimo__",
+    "__pycache__",
+    "*.pyc",
+    "*.pyo",
+    "*.pyd",
+    ".Python",
+    # Dependencies
+    ".venv",
+    "venv",
+    "env",
+    "ENV",
+    "sdk",  # Symlinked SDK directory
+    "requirements.in",
+    # W&B
+    "wandb",
+    # Version control
+    ".git",
+    ".gitignore",
+    # IDEs
+    ".vscode",
+    ".idea",
+    "*.swp",
+    "*.swo",
+    # OS
+    ".DS_Store",
+    "Thumbs.db",
+    # Docker
+    "Dockerfile",
+    ".dockerignore",
+    # Caches
+    ".cache",
+    ".mypy_cache",
+    ".pytest_cache",
+    ".ruff_cache",
+    # Distribution / packaging
+    "build",
+    "dist",
+    "*.egg-info",
+]
 
 
 def log_error(msg: str) -> None:
@@ -40,19 +90,10 @@ def log_warning(msg: str) -> None:
 
 
 def check_wandb_login() -> bool:
-    """Check if user is logged into wandb."""
+    """Check if user is logged into wandb using api_key."""
     try:
-        result = subprocess.run(
-            ["wandb", "status"],
-            capture_output=True,
-            text=True,
-            timeout=10,
-        )
-        # wandb status returns 0 when logged in
-        if result.returncode == 0 and "Logged in" in result.stdout:
-            return True
-        return False
-    except (subprocess.TimeoutExpired, FileNotFoundError) as e:
+        return wandb.api.api_key is not None
+    except Exception as e:
         log_error(f"Failed to check wandb login status: {e}")
         return False
 
@@ -94,44 +135,118 @@ def get_artifact_name() -> str | None:
         return None
 
 
-def create_artifact(project: str, name: str) -> int:
+def should_exclude(path: Path, base_path: Path) -> bool:
     """
-    Create artifact using wandb CLI.
+    Check if a file or directory should be excluded based on EXCLUDE_PATTERNS.
+
+    Args:
+        path: The path to check
+        base_path: The base directory being uploaded
 
     Returns:
-        Exit code from wandb CLI (0 for success, non-zero for failure)
+        True if the path should be excluded, False otherwise
     """
-    artifact_name = f"{project}/{name}:latest"
+    relative_path = path.relative_to(base_path)
+    path_str = str(relative_path)
+    name = path.name
 
-    log_info(f"Creating artifact: {artifact_name}")
+    for pattern in EXCLUDE_PATTERNS:
+        # Direct name match
+        if name == pattern:
+            return True
+        # Wildcard pattern match
+        if "*" in pattern:
+            import fnmatch
 
+            if fnmatch.fnmatch(name, pattern):
+                return True
+            if fnmatch.fnmatch(path_str, pattern):
+                return True
+        # Path component match
+        if pattern in path_str.split("/"):
+            return True
+
+    # Also check if it's a symlink (common in dev setup)
+    if path.is_symlink():
+        log_info(f"Skipping symlink: {relative_path}")
+        return True
+
+    return False
+
+
+def create_artifact(project: str, artifact_name: str) -> int:
+    """
+    Create artifact using wandb Python API.
+
+    Args:
+        project: The wandb project name
+        artifact_name: The artifact name from pyproject.toml
+
+    Returns:
+        Exit code (0 for success, non-zero for failure)
+    """
     try:
-        result = subprocess.run(
-            [
-                "wandb",
-                "artifact",
-                "put",
-                "--name",
-                artifact_name,
-                "--type",
-                "app",
-                "/app/src",
-            ],
-            timeout=300,  # 5 minute timeout for large directories
+        # Parse the artifact path to get entity, project, artifact_name
+        # Similar to CLI implementation
+        public_api = PublicApi()
+        full_name = f"{project}/{artifact_name}"
+        entity, parsed_project, parsed_artifact_name = public_api._parse_artifact_path(
+            full_name
         )
 
-        if result.returncode == 0:
-            log_info(f"Successfully created artifact: {artifact_name}")
-        else:
-            log_error(f"Failed to create artifact (exit code {result.returncode})")
+        # Use parsed project if available, otherwise use provided project
+        if parsed_project is None:
+            parsed_project = project
 
-        return result.returncode
+        # Set up internal API with entity and project
+        api = InternalApi()
+        if entity:
+            api.set_setting("entity", entity)
+        api.set_setting("project", parsed_project)
 
-    except subprocess.TimeoutExpired:
-        log_error("Artifact creation timed out after 5 minutes")
-        return 1
+        # Create the artifact
+        artifact = wandb.Artifact(
+            name=parsed_artifact_name, type="app", description="Mod snapshot"
+        )
+
+        # Build the full artifact path for display
+        artifact_path = f"{entity}/{parsed_project}/{parsed_artifact_name}:latest"
+        log_info(f'Uploading directory /app/src to: "{artifact_path}" (app)')
+
+        # Add directory with exclusions
+        src_path = Path("/app/src")
+
+        # Walk the directory and add files that aren't excluded
+        for item in src_path.rglob("*"):
+            if item.is_file() and not should_exclude(item, src_path):
+                relative_path = item.relative_to(src_path)
+                artifact.add_file(str(item), name=str(relative_path))
+                log_info(f"  Adding: {relative_path}")
+
+        # Initialize a run and log the artifact
+        with wandb.init(
+            entity=entity,
+            project=parsed_project,
+            config={"path": "/app/src"},
+            job_type="snapshot",
+        ) as run:
+            run.log_artifact(artifact, aliases=["latest"])
+
+        # Wait for artifact to finish uploading
+        artifact.wait()
+
+        log_info(f"Artifact uploaded successfully: {artifact.source_qualified_name}")
+        log_info(
+            f'Use this artifact in a run by adding:\n    artifact = run.use_artifact("{artifact.source_qualified_name}")'
+        )
+
+        return 0
+
     except Exception as e:
-        log_error(f"Unexpected error creating artifact: {e}")
+        log_error(f"Failed to create artifact: {e}")
+        import traceback
+
+        traceback.print_exc()
         return 1
 
 
