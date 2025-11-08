@@ -189,7 +189,7 @@ def build(
             # Replace '$$MOD_ENTRYPOINT$$' with '["python", "app.py"]'
             mod_config = details_from_config(pyproject)
 
-            # Add Node.js LTS for marimo flavor (marimo uses it for code completion, formatting, etc.)
+            # Add Node.js LTS and custom PS1 for marimo flavor
             if mod_config.flavor == "marimo":
                 node_install = """# Install Node.js LTS for marimo
 RUN curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - && \\
@@ -197,15 +197,22 @@ RUN curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - && \\
     apt-get clean && \\
     rm -rf /var/lib/apt/lists/*
 """
+                ps1_config = 'PS1="app@marimo:\\w$ "'
             else:
                 node_install = ""
+                ps1_config = ""
 
-            new_content = template_content.replace(
-                "$$MOD_ENTRYPOINT",
-                " ".join(
-                    ["python", "/app/src/healthcheck.py", "&"] + mod_config.entrypoint
-                ),
-            ).replace("$$MARIMO_NODE_INSTALL", node_install)
+            new_content = (
+                template_content.replace(
+                    "$$MOD_ENTRYPOINT",
+                    " ".join(
+                        ["python", "/app/src/healthcheck.py", "&"]
+                        + mod_config.entrypoint
+                    ),
+                )
+                .replace("$$MARIMO_NODE_INSTALL", node_install)
+                .replace("$$MARIMO_PS1", ps1_config)
+            )
 
             # Write the new Dockerfile
             with dockerfile_path.open("w") as f:

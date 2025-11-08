@@ -22,7 +22,7 @@ ENV LANG=en_US.UTF-8 \
 
 USER 999
 
-ENV PATH=/app/.local/bin:/app/.venv/bin:${PATH} PYTHONUNBUFFERED=1 UV_LINK_MODE=copy MARIMO_MANAGE_SCRIPT_METADATA=true
+ENV PATH=/app/.local/bin:/app/.venv/bin:${PATH} PYTHONUNBUFFERED=1 UV_LINK_MODE=copy MARIMO_MANAGE_SCRIPT_METADATA=true PS1="app@marimo:\w$ "
 
 RUN uv venv && \
     uv init && \
