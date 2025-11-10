@@ -112,7 +112,7 @@
         "classifiers": [],
         "entrypoint": [
             "python",
-            "/app/src/marimo-entrypoint.py"
+            "/app/src/wandb/marimo-entrypoint.py"
         ],
         "description": "Example marimo mod demonstrating edit and publish modes",
         "version": "0.1.0",

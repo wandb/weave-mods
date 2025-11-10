@@ -295,6 +295,8 @@ def dev(directory: Annotated[str, typer.Argument()] = "."):
         "WANDB_PROJECT",
         "-p",
         f"{port}:{port}",
+        "-p",
+        "6638:6638",  # Healthcheck port
         "-v",
         f"{os.path.abspath(os.path.dirname(__file__))}/mods:/mods",
         "-v",

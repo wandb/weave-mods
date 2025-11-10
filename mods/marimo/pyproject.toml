@@ -13,4 +13,4 @@ flavor = "marimo"
 mods = { path = "../../sdk", editable = true }
 
 [dependency-groups]
-dev = ["mods"]
+dev = ["mods", "pytest>=8.0.0", "pytest-mock>=3.12.0"]

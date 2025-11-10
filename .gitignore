@@ -8,8 +8,8 @@ mods/**/.dockerignore
 mods/**/Dockerfile
 mods/**/healthcheck.py
 mods/**/marimo-entrypoint.py
+mods/**/artifact-helper.py
 mods/health.log
-!mods/healthcheck.py
-!mods/marimo-entrypoint.py
+!mods/wandb/
 build_output.json
 docs/plans/
