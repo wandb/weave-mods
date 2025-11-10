@@ -2,7 +2,7 @@
 mods = ["guardrails-playground"]
 
 [Analysis]
-mods = ["embedding-classifier", "dashboard"]
+mods = ["marimo", "embedding-classifier", "dashboard"]
 
 [Demos]
 mods = ["demo", "together-ft"]
