@@ -114,9 +114,12 @@
             "python",
             "/app/src/wandb/marimo-entrypoint.py"
         ],
-        "description": "Example marimo mod demonstrating edit and publish modes",
+        "description": "Use marimo to build your own interactive data analysis",
         "version": "0.1.0",
-        "secrets": [],
+        "secrets": [
+            "WANDB_API_KEY",
+            "OPENAI_API_KEY"
+        ],
         "flavor": "marimo"
     },
     "anamolyzer": {

@@ -24,6 +24,21 @@
     ],
     "Analysis": [
         {
+            "name": "marimo",
+            "classifiers": [],
+            "entrypoint": [
+                "python",
+                "/app/src/wandb/marimo-entrypoint.py"
+            ],
+            "description": "Use marimo to build your own interactive data analysis",
+            "version": "0.1.0",
+            "secrets": [
+                "WANDB_API_KEY",
+                "OPENAI_API_KEY"
+            ],
+            "flavor": "marimo"
+        },
+        {
             "name": "embedding-classifier",
             "classifiers": [],
             "entrypoint": [
