@@ -281,7 +281,7 @@ async def main():
         "uv",
         "run",
         "--no-project",
-        "/mods/healthcheck.py",
+        "/mods/wandb/healthcheck.py",
         stdout=health_log,
         stderr=health_log,
     )

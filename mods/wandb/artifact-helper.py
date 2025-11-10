@@ -17,8 +17,7 @@ import tomllib
 from pathlib import Path
 
 import wandb
-from wandb.apis.public import PublicApi
-from wandb.sdk.internal.internal_api import Api as InternalApi
+from wandb.apis import InternalApi, PublicApi
 
 # ANSI color codes for output
 RED = "\033[91m"
@@ -165,11 +164,6 @@ def should_exclude(path: Path, base_path: Path) -> bool:
         # Path component match
         if pattern in path_str.split("/"):
             return True
-
-    # Also check if it's a symlink (common in dev setup)
-    if path.is_symlink():
-        log_info(f"Skipping symlink: {relative_path}")
-        return True
 
     return False
 

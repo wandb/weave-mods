@@ -29,7 +29,7 @@ def create_artifact_snapshot() -> tuple[int, str, str]:
     try:
         # Call the artifact helper script
         result = subprocess.run(
-            ["/app/.venv/bin/python", "/mods/artifact-helper.py"],
+            ["/app/.venv/bin/python", "/app/src/wandb/artifact-helper.py"],
             capture_output=True,
             text=True,
             timeout=360,  # 6 minute timeout
@@ -118,17 +118,25 @@ def run_health_server():
 
 def shutdown_handler(signum, frame):
     """
-    Handle shutdown signals (SIGTERM, SIGINT) by creating an artifact snapshot.
+    Handle shutdown signals (SIGTERM, SIGINT).
+    Creates an artifact snapshot only if WANDB_SNAPSHOT_ON_SHUTDOWN is set to "true".
     """
     signal_name = "SIGTERM" if signum == signal.SIGTERM else "SIGINT"
-    logger.info(f"Received {signal_name}, creating artifact snapshot before shutdown")
+    logger.info(f"Received {signal_name}")
 
-    exit_code, stdout, stderr = create_artifact_snapshot()
+    # Only create artifact if explicitly enabled
+    if os.environ.get("WANDB_SNAPSHOT_ON_SHUTDOWN", "").lower() == "true":
+        logger.info("Creating artifact snapshot before shutdown")
+        exit_code, stdout, stderr = create_artifact_snapshot()
 
-    if exit_code == 0:
-        logger.info("Artifact snapshot created successfully")
+        if exit_code == 0:
+            logger.info("Artifact snapshot created successfully")
+        else:
+            logger.error(f"Failed to create artifact snapshot: {stderr}")
     else:
-        logger.error(f"Failed to create artifact snapshot: {stderr}")
+        logger.info(
+            "Skipping artifact snapshot (set WANDB_SNAPSHOT_ON_SHUTDOWN=true to enable)"
+        )
 
     # Exit gracefully
     logger.info("Shutting down health check server")

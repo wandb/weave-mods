@@ -49,7 +49,7 @@ FLAVORS = {
         "--server.enableXsrfProtection=false",
         "--client.toolbarMode=minimal",
     ],
-    "marimo": ["python", "/app/src/marimo-entrypoint.py"],
+    "marimo": ["python", "/app/src/wandb/marimo-entrypoint.py"],
 }
 
 
@@ -158,7 +158,7 @@ def build(
 
     mod_configs = []
     build_configs = []
-    healthcheck = Path(__file__).parent / "mods" / "healthcheck.py"
+    wandb_helpers = Path(__file__).parent / "mods" / "wandb"
     # Loop over all directories containing 'pyproject.toml' under 'mods/'
     for dir_str in directories:
         dir_path = Path(dir_str)
@@ -173,7 +173,7 @@ def build(
             log.print(f"Processing directory: {dir_path}", style="green")
         dockerfile_path = dir_path / "Dockerfile"
         dockerignore_path = dir_path / ".dockerignore"
-        healthcheck_path = dir_path / "healthcheck.py"
+        wandb_dir = dir_path / "wandb"
         try:
             if upgrade:
                 log.print("Upgrading dependencies...", style="yellow")
@@ -208,7 +208,7 @@ RUN echo 'export PS1="app@${WANDB_PROJECT:-mods}:\\w$ "' >> /etc/bash.bashrc
                 template_content.replace(
                     "$$MOD_ENTRYPOINT",
                     " ".join(
-                        ["python", "/app/src/healthcheck.py", "&"]
+                        ["python", "/app/src/wandb/healthcheck.py", "&"]
                         + mod_config.entrypoint
                     ),
                 )
@@ -220,15 +220,14 @@ RUN echo 'export PS1="app@${WANDB_PROJECT:-mods}:\\w$ "' >> /etc/bash.bashrc
             with dockerfile_path.open("w") as f:
                 f.write(new_content)
 
-            # Copy healthcheck.py to the mod directory
-            shutil.copy(healthcheck, dir_path)
+            # Create wandb directory and copy helper files
+            wandb_dir.mkdir(exist_ok=True)
+            shutil.copy(wandb_helpers / "healthcheck.py", wandb_dir)
+            shutil.copy(wandb_helpers / "artifact-helper.py", wandb_dir)
 
             # For marimo flavor, also copy the entrypoint wrapper
             if mod_config.flavor == "marimo":
-                marimo_entrypoint = (
-                    Path(__file__).parent / "mods" / "marimo-entrypoint.py"
-                )
-                shutil.copy(marimo_entrypoint, dir_path)
+                shutil.copy(wandb_helpers / "marimo-entrypoint.py", wandb_dir)
 
             # Build the Docker image
             docker_tags = [
@@ -291,11 +290,9 @@ RUN echo 'export PS1="app@${WANDB_PROJECT:-mods}:\\w$ "' >> /etc/bash.bashrc
         finally:
             # Clean up '.dockerignore' and 'Dockerfile' only if we built locally
             if build:
-                healthcheck_path.unlink(missing_ok=True)
+                shutil.rmtree(wandb_dir, ignore_errors=True)
                 dockerignore_path.unlink(missing_ok=True)
                 dockerfile_path.unlink(missing_ok=True)
-                marimo_entrypoint_path = dir_path / "marimo-entrypoint.py"
-                marimo_entrypoint_path.unlink(missing_ok=True)
     log.print(
         f"{'Built' if build else 'Wrote'} {len(mod_configs)} mods {'to the manifest' if manifest else ''}",
         style="green",
